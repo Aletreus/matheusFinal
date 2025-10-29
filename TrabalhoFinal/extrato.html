@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>InstinctBank — Extrato</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="data.js"></script>
+</head>
+<body>
+  <main style="padding:2rem;display:flex;justify-content:center;">
+    <section class="card" style="max-width:720px;">
+      <h2>Extrato</h2>
+      <p>Usuário: <strong id="user"></strong></p>
+      <p>Saldo atual: R$ <strong id="saldo"></strong></p>
+      <h4>Transações</h4>
+      <ul id="lista" style="max-height:300px;overflow:auto"></ul>
+      <p style="margin-top:.5rem"><button onclick="location.href='painel.html'">Voltar ao Painel</button></p>
+    </section>
+  </main>
+
+  <script>
+    const u = window.db.getUsuarioAtual();
+    if (!u) location.href='index.html';
+    const usuarios = window.db.getUsuarios();
+    const usuario = usuarios[u];
+    document.getElementById('user').textContent = u;
+    document.getElementById('saldo').textContent = (usuario.saldo||0).toFixed(2);
+    const listaEl = document.getElementById('lista');
+    (usuario.historico||[]).forEach(item => {
+      const li = document.createElement('li');
+      li.textContent = item;
+      listaEl.appendChild(li);
+    });
+  </script>
+</body>
+</html>

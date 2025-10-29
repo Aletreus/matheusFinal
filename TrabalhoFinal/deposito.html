@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>InstinctBank — Depositar</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="data.js"></script>
+</head>
+<body>
+  <main style="padding:2rem;display:flex;justify-content:center;">
+    <section class="card" style="max-width:520px;">
+      <h2>Depositar</h2>
+      <p>Usuário: <strong id="usuario"></strong></p>
+      <p>Saldo atual: R$ <strong id="saldo">0.00</strong></p>
+
+      <input id="valor" type="number" step="0.01" placeholder="Valor em R$" />
+      <button id="btnDepositar">Depositar</button>
+      <p id="msg" style="margin-top:.5rem;color:green"></p>
+
+      <p style="margin-top:.5rem"><button onclick="location.href='painel.html'">Voltar ao Painel</button></p>
+    </section>
+  </main>
+
+  <script>
+    const atual = window.db.getUsuarioAtual();
+    if (!atual) location.href = 'index.html';
+    const usuarios = window.db.getUsuarios();
+    document.getElementById('usuario').textContent = atual;
+    function atualizarSaldoVisivel(){
+      const u = window.db.getUsuarios()[atual];
+      document.getElementById('saldo').textContent = (u.saldo||0).toFixed(2);
+    }
+    atualizarSaldoVisivel();
+
+    document.getElementById('btnDepositar').addEventListener('click', function(){
+      const v = parseFloat(document.getElementById('valor').value);
+      const msg = document.getElementById('msg');
+      msg.style.color = 'red';
+      if (!(v > 0)) { msg.textContent = 'Valor inválido para depósito.'; return; }
+      const usuarios = window.db.getUsuarios();
+      usuarios[atual].saldo = (usuarios[atual].saldo || 0) + v;
+      usuarios[atual].historico = usuarios[atual].historico || [];
+      usuarios[atual].historico.unshift(`${new Date().toLocaleString()} — Depósito R$ ${v.toFixed(2)}`);
+      window.db.saveUsuarios(usuarios);
+      msg.style.color = 'green';
+      msg.textContent = `Depósito de R$ ${v.toFixed(2)} efetuado.`;
+      document.getElementById('valor').value = '';
+      atualizarSaldoVisivel();
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>InstinctBank — Cadastro</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="data.js"></script>
+</head>
+<body>
+  <main style="display:flex;justify-content:center;align-items:center;flex:1;padding:2rem;">
+    <section class="card" style="max-width:520px;">
+      <h2>Formulário de Cadastro</h2>
+      <input id="nome" placeholder="Nome completo" />
+      <input id="email" placeholder="Email" />
+      <input id="telefone" placeholder="Telefone" />
+      <input id="usuario" placeholder="Usuário desejado" />
+      <input id="senha" type="password" placeholder="Senha" />
+      <button id="btnConcluir">Concluir Cadastro</button>
+      <p id="msg" style="color:red;margin-top:.5rem"></p>
+      <p style="margin-top:.5rem"><button onclick="location.href='index.html'">Voltar</button></p>
+    </section>
+  </main>
+
+  <script>
+    document.getElementById('btnConcluir').addEventListener('click', function(){
+      const usuario = document.getElementById('usuario').value.trim();
+      const senha = document.getElementById('senha').value;
+      const nome = document.getElementById('nome').value.trim();
+      const email = document.getElementById('email').value.trim();
+      const telefone = document.getElementById('telefone').value.trim();
+      const msg = document.getElementById('msg');
+      if (!usuario || !senha) { msg.textContent = 'Usuário e senha obrigatórios'; return; }
+      const usuarios = window.db.getUsuarios();
+      if (usuarios[usuario]) { msg.textContent = 'Usuário já existe'; return; }
+      usuarios[usuario] = { senha, saldo: 0, historico: [`${new Date().toLocaleString()} — Conta criada para ${nome || usuario}`], cartoes: [], emprestimos: [], perfil: {nome, email, telefone} };
+      window.db.saveUsuarios(usuarios);
+      window.db.setUsuarioAtual(usuario);
+      window.location.href = 'painel.html';
+    });
+  </script>
+</body>
+</html>

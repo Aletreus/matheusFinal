@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>InstinctBank — Painel</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="data.js"></script>
+</head>
+<body>
+  <header style="display:flex;justify-content:space-between;align-items:center;padding:1rem 2rem;background:#1b5e20;color:#fff;">
+    <div>🏦 InstinctBank</div>
+    <div><button onclick="sair()" style="background:#fff;color:#1b5e20">Sair</button></div>
+  </header>
+
+  <main style="padding:2rem;display:flex;justify-content:center;">
+    <section class="card" style="max-width:520px;">
+      <h2>Painel Principal</h2>
+      <p>Usuário: <strong id="userName"></strong></p>
+      <p>Saldo atual: R$ <strong id="saldo">0.00</strong></p>
+
+      <div style="display:flex;flex-direction:column;gap:.5rem;margin-top:1rem">
+        <button onclick="location.href='extrato.html'">Saldo e Extrato</button>
+        <button onclick="location.href='transferencia.html'">Transferências</button>
+        <button onclick="location.href='pagamento.html'">Pagamentos</button>
+        <button onclick="location.href='cartoes.html'">Cartões</button>
+        <button onclick="location.href='deposito.html'">Depositar</button> <!-- adicionado -->
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const usuarioAtual = window.db.getUsuarioAtual();
+    if (!usuarioAtual) location.href = 'index.html';
+    const usuarios = window.db.getUsuarios();
+    document.getElementById('userName').textContent = usuarioAtual;
+    document.getElementById('saldo').textContent = (usuarios[usuarioAtual].saldo || 0).toFixed(2);
+    function sair(){ window.db.logout(); location.href='index.html'; }
+  </script>
+</body>
+</html>

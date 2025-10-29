@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>InstinctBank — Transferência</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="data.js"></script>
+</head>
+<body>
+  <main style="padding:2rem;display:flex;justify-content:center;">
+    <section class="card" style="max-width:520px;">
+      <h2>Transferências</h2>
+      <input id="dest" placeholder="Conta de destino (usuário)" />
+      <input id="valor" type="number" placeholder="Valor em R$" />
+      <button id="enviar">Confirmar Envio</button>
+      <p id="msg" style="color:green;margin-top:.5rem"></p>
+      <p style="margin-top:.5rem"><button onclick="location.href='painel.html'">Voltar</button></p>
+    </section>
+  </main>
+
+  <script>
+    const atual = window.db.getUsuarioAtual();
+    if (!atual) location.href='index.html';
+    document.getElementById('enviar').addEventListener('click', function(){
+      const dest = document.getElementById('dest').value.trim();
+      const valor = parseFloat(document.getElementById('valor').value);
+      const usuarios = window.db.getUsuarios();
+      const msg = document.getElementById('msg');
+      msg.style.color='red';
+      if (!dest || !usuarios[dest]) { msg.textContent='Destinatário inválido'; return; }
+      if (dest === atual) { msg.textContent='Não é possível transferir para si mesmo'; return; }
+      if (!(valor>0) || valor > usuarios[atual].saldo) { msg.textContent='Valor inválido ou saldo insuficiente'; return; }
+      usuarios[atual].saldo -= valor;
+      usuarios[dest].saldo += valor;
+      usuarios[atual].historico.unshift(`${new Date().toLocaleString()} — Transferência de R$ ${valor.toFixed(2)} para ${dest}`);
+      usuarios[dest].historico.unshift(`${new Date().toLocaleString()} — Transferência recebida R$ ${valor.toFixed(2)} de ${atual}`);
+      window.db.saveUsuarios(usuarios);
+      msg.style.color='green';
+      msg.textContent='Transferência realizada';
+      document.getElementById('dest').value=''; document.getElementById('valor').value='';
+    });
+  </script>
+</body>
+</html>

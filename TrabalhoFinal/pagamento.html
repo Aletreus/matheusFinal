@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>InstinctBank — Pagamentos</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="data.js"></script>
+</head>
+<body>
+  <main style="padding:2rem;display:flex;justify-content:center;">
+    <section class="card" style="max-width:520px;">
+      <h2>Pagamentos</h2>
+      <input id="codigo" placeholder="Código do boleto" />
+      <input id="valor" type="number" placeholder="Valor em R$" />
+      <button id="pagar">Pagar</button>
+      <p id="msg" style="color:green;margin-top:.5rem"></p>
+      <p style="margin-top:.5rem"><button onclick="location.href='painel.html'">Voltar</button></p>
+    </section>
+  </main>
+
+  <script>
+    const atual = window.db.getUsuarioAtual();
+    if (!atual) location.href='index.html';
+    document.getElementById('pagar').addEventListener('click', function(){
+      const cod = document.getElementById('codigo').value.trim();
+      const valor = parseFloat(document.getElementById('valor').value);
+      const usuarios = window.db.getUsuarios();
+      const msg = document.getElementById('msg');
+      msg.style.color='red';
+      if (!cod) { msg.textContent='Código inválido'; return; }
+      if (!(valor>0) || valor > usuarios[atual].saldo) { msg.textContent='Valor inválido ou saldo insuficiente'; return; }
+      usuarios[atual].saldo -= valor;
+      usuarios[atual].historico.unshift(`${new Date().toLocaleString()} — Pagamento boleto ${cod} R$ ${valor.toFixed(2)}`);
+      window.db.saveUsuarios(usuarios);
+      msg.style.color='green';
+      msg.textContent='Pagamento efetuado';
+      document.getElementById('codigo').value=''; document.getElementById('valor').value='';
+    });
+  </script>
+</body>
+</html>

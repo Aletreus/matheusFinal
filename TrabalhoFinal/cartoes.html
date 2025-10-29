@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>InstinctBank — Cartões</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="data.js"></script>
+</head>
+<body>
+  <main style="padding:2rem;display:flex;justify-content:center;">
+    <section class="card" style="max-width:520px;">
+      <h2>Gerenciamento de Cartões</h2>
+      <div id="cartoesList"></div>
+      <button id="gerar">Gerar Cartão Virtual</button>
+      <p id="msg" style="color:green;margin-top:.5rem"></p>
+      <p style="margin-top:.5rem"><button onclick="location.href='painel.html'">Voltar</button></p>
+    </section>
+  </main>
+
+  <script>
+    const atual = window.db.getUsuarioAtual();
+    if (!atual) location.href='index.html';
+    const usuarios = window.db.getUsuarios();
+    const bloco = document.getElementById('cartoesList');
+    function render(){
+      bloco.innerHTML='';
+      const lista = usuarios[atual].cartoes || [];
+      if (!lista.length) { bloco.textContent='Nenhum cartão virtual gerado.'; return; }
+      lista.slice().reverse().forEach(c => {
+        const div = document.createElement('div');
+        div.style.background='#e8f5e9'; div.style.padding='6px'; div.style.margin='6px 0'; div.style.borderRadius='6px';
+        const masked = c.numero.split(' ').map((g,i)=> i<1? g: '****').join(' ');
+        div.textContent = `Cartão: ${masked} • Val: ${c.validade} • CVV: ${c.cvv}`;
+        bloco.appendChild(div);
+      });
+    }
+    render();
+    document.getElementById('gerar').addEventListener('click', function(){
+      const cardNumber = Array.from({length:16}, () => Math.floor(Math.random()*10)).join('');
+      const formatted = cardNumber.match(/.{1,4}/g).join(' ');
+      const expiry = new Date(); expiry.setFullYear(expiry.getFullYear()+2);
+      const mm = String(expiry.getMonth()+1).padStart(2,'0');
+      const yy = String(expiry.getFullYear()).slice(-2);
+      const cvv = String(Math.floor(Math.random()*900)+100);
+      const novo = { numero: formatted, validade: `${mm}/${yy}`, cvv, ativo:true, criadoEm: new Date().toISOString() };
+      usuarios[atual].cartoes = usuarios[atual].cartoes || [];
+      usuarios[atual].cartoes.push(novo);
+      usuarios[atual].historico = usuarios[atual].historico || [];
+      usuarios[atual].historico.unshift(`${new Date().toLocaleString()} — Cartão virtual gerado (${formatted.slice(0,4)} ****)`);
+      window.db.saveUsuarios(usuarios);
+      document.getElementById('msg').textContent='Cartão gerado';
+      render();
+    });
+  </script>
+</body>
+</html>

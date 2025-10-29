@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>InstinctBank — Login</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="data.js"></script>
+</head>
+<body>
+  <main style="display:flex;justify-content:center;align-items:center;flex:1;padding:2rem;">
+    <section class="card" style="max-width:420px;">
+      <h2>Tela de Login</h2>
+      <input id="usuario" placeholder="Usuário" />
+      <input id="senha" type="password" placeholder="Senha" />
+      <button id="btnAcessar">Acessar Conta</button>
+      <p id="msg" style="color:red;margin-top:.5rem"></p>
+      <p style="margin-top:.5rem"><button onclick="location.href='index.html'">Voltar</button></p>
+    </section>
+  </main>
+
+  <script>
+    document.getElementById('btnAcessar').addEventListener('click', function(){
+      const u = document.getElementById('usuario').value.trim();
+      const p = document.getElementById('senha').value;
+      const usuarios = window.db.getUsuarios();
+      const msg = document.getElementById('msg');
+      if (!usuarios[u] || usuarios[u].senha !== p) {
+        msg.textContent = 'Usuário ou senha incorretos';
+        return;
+      }
+      window.db.setUsuarioAtual(u);
+      window.location.href = 'painel.html';
+    });
+  </script>
+</body>
+</html>
