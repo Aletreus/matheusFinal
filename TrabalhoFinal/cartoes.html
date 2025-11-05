@@ -7,6 +7,7 @@
   <link rel="stylesheet" href="style.css" />
   <script src="data.js"></script>
   <link rel="shortcut icon" href="icones/LogoInstinct.png" type="image/x-icon">
+
   <style>
     .logo-header {
       text-align: center;
@@ -22,7 +23,7 @@
       perspective: 1000px;
       margin: 25px auto;
       position: relative;
-      transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+      transition: all 0.3s ease;
       transform-origin: center center;
     }
 
@@ -39,6 +40,71 @@
       justify-content: space-between;
       color: white;
       font-family: 'Courier New', monospace;
+      transition: filter 0.3s ease;
+    }
+
+    /* === Hover (escurece o cartão e mostra a lixeira) === */
+    .credit-card:hover .credit-card-inner {
+      filter: brightness(0.5);
+    }
+
+    /* === Ícone de exclusão (lixeira) === */
+    .delete-icon {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 60px;
+      height: 60px;
+      cursor: pointer;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .credit-card:hover .delete-icon {
+      opacity: 1;
+    }
+
+    .delete-icon img {
+      width: 60%;
+      height: 60%;
+      object-fit: contain;
+      position: absolute;
+      transition: opacity 0.3s ease;
+    }
+
+    .delete-icon img.trash-open {
+      opacity: 0;
+    }
+
+    /* Efeito de círculo branco translúcido ao passar o mouse */
+    .delete-icon::before {
+      content: "";
+      position: absolute;
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0);
+      transition: background 0.3s ease, transform 0.3s ease;
+      z-index: -1;
+    }
+
+    .delete-icon:hover::before {
+      background: rgba(255, 255, 255, 0.2);
+      transform: scale(1.1);
+    }
+
+    /* Troca entre lixeira fechada e aberta */
+    .delete-icon:hover img.trash-closed {
+      opacity: 0;
+    }
+
+    .delete-icon:hover img.trash-open {
+      opacity: 1;
     }
 
     .card-chip {
@@ -108,12 +174,6 @@
       color: rgba(255,255,255,0.8);
     }
 
-    .card-list {
-      display: flex;
-      flex-direction: column;
-      gap: 20px;
-    }
-
     .cvv-label {
       position: absolute;
       bottom: 20px;
@@ -122,47 +182,21 @@
       opacity: 0.8;
     }
 
+    .card-list {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
     @keyframes cardRemoval {
-      0% {
-        transform: scale(1) rotate(0);
-        opacity: 1;
-      }
-      20% {
-        transform: scale(0.9) rotate(-5deg);
-      }
-      100% {
-        transform: scale(0) rotate(15deg);
-        opacity: 0;
-      }
+      0% { transform: scale(1) rotate(0); opacity: 1; }
+      20% { transform: scale(0.9) rotate(-5deg); }
+      100% { transform: scale(0) rotate(15deg); opacity: 0; }
     }
 
     .credit-card.removing {
       animation: cardRemoval 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
     }
-
-    @keyframes successMessage {
-      0% {
-        transform: translateY(-20px);
-        opacity: 0;
-      }
-      10% {
-        transform: translateY(0);
-        opacity: 1;
-      }
-      90% {
-        transform: translateY(0);
-        opacity: 1;
-      }
-      100% {
-        transform: translateY(-20px);
-        opacity: 0;
-      }
-    }
-
-    #msg.show-message {
-      animation: successMessage 2s ease-in-out;
-    }
-
 
   </style>
 </head>
@@ -170,6 +204,7 @@
   <header class="logo-header">
     <img src="icones/LogoComTexto.png" alt="InstinctBank Logo">
   </header>
+
   <main style="padding:2rem;display:flex;justify-content:center;">
     <section class="card" style="max-width:520px;">
       <h2>Gerenciamento de Cartões</h2>
@@ -185,45 +220,63 @@
     if (!atual) location.href='index.html';
     const usuarios = window.db.getUsuarios();
     const bloco = document.getElementById('cartoesList');
+    const msg = document.getElementById('msg');
+    const gerarBtn = document.getElementById('gerar');
+
     function render(){
       bloco.innerHTML='';
       const lista = usuarios[atual].cartoes || [];
       if (!lista.length) { 
         bloco.textContent='Nenhum cartão virtual gerado.'; 
-        document.getElementById('gerar').disabled = false;
+        gerarBtn.disabled = false;
         return; 
       }
-      document.getElementById('gerar').disabled = true;
+
+      gerarBtn.disabled = true;
       bloco.className = 'card-list';
-      lista.slice().reverse().forEach((c, index) => {
+      lista.slice().reverse().forEach((c) => {
         const cardDiv = document.createElement('div');
         cardDiv.className = 'credit-card';
-        
+
         const cardInner = document.createElement('div');
         cardInner.className = 'credit-card-inner';
-        
+
+        // === ÍCONE DE EXCLUSÃO COM DUAS IMAGENS ===
+        const deleteIcon = document.createElement('div');
+        deleteIcon.className = 'delete-icon';
+        deleteIcon.innerHTML = `
+          <img src="icones/trash-fechada.png" alt="Excluir" class="trash-closed">
+          <img src="icones/trash-aberta.png" alt="Excluir" class="trash-open">
+        `;
+        deleteIcon.addEventListener('click', (e) => {
+          e.stopPropagation();
+          if (confirm('Deseja realmente excluir este cartão virtual?')) {
+            deleteCard(c.criadoEm, cardDiv);
+          }
+        });
+
         const chip = document.createElement('div');
         chip.className = 'card-chip';
-        
+
         const bankLogo = document.createElement('div');
         bankLogo.className = 'bank-logo';
         bankLogo.textContent = 'INSTINCT';
-        
+
         const number = document.createElement('div');
         number.className = 'card-number';
         number.textContent = c.numero;
-        
+
         const cardInfo = document.createElement('div');
         cardInfo.className = 'card-info';
-        
+
         const holder = document.createElement('div');
         holder.className = 'card-holder';
         holder.textContent = usuarios[atual].perfil.nome;
-        
+
         const expiry = document.createElement('div');
         expiry.className = 'card-expiry';
         expiry.innerHTML = `<span>VALID THRU</span>${c.validade}`;
-        
+
         const cvv = document.createElement('div');
         cvv.className = 'cvv-label';
         cvv.textContent = `CVV: ${c.cvv}`;
@@ -231,7 +284,7 @@
         const cardFooter = document.createElement('div');
         cardFooter.className = 'card-footer';
         cardFooter.appendChild(cvv);
-        
+
         cardInfo.appendChild(holder);
         cardInfo.appendChild(expiry);
 
@@ -240,16 +293,34 @@
         cardInner.appendChild(number);
         cardInner.appendChild(cardInfo);
         cardInner.appendChild(cardFooter);
+
         cardDiv.appendChild(cardInner);
+        cardDiv.appendChild(deleteIcon);
         bloco.appendChild(cardDiv);
       });
     }
 
-    render();
-    document.getElementById('gerar').addEventListener('click', function(){
+    function deleteCard(criadoEm, cardElement) {
+      const lista = usuarios[atual].cartoes || [];
+      const idx = lista.findIndex(c => c.criadoEm === criadoEm);
+      if (idx === -1) return;
+      cardElement.classList.add('removing');
+      setTimeout(() => {
+        lista.splice(idx, 1);
+        usuarios[atual].cartoes = lista;
+        usuarios[atual].historico = usuarios[atual].historico || [];
+        usuarios[atual].historico.unshift(`${new Date().toLocaleString()} — Cartão virtual excluído.`);
+        window.db.saveUsuarios(usuarios);
+        msg.textContent = 'Cartão excluído com sucesso.';
+        msg.style.color = 'green';
+        render();
+      }, 500);
+    }
+
+    gerarBtn.addEventListener('click', function(){
       if (usuarios[atual].cartoes && usuarios[atual].cartoes.length > 0) {
-        document.getElementById('msg').textContent = 'Você já possui um cartão ativo';
-        document.getElementById('msg').style.color = 'red';
+        msg.textContent = 'Você já possui um cartão ativo';
+        msg.style.color = 'red';
         return;
       }
       const cardNumber = Array.from({length:16}, () => Math.floor(Math.random()*10)).join('');
@@ -264,12 +335,13 @@
       usuarios[atual].historico = usuarios[atual].historico || [];
       usuarios[atual].historico.unshift(`${new Date().toLocaleString()} — Cartão virtual gerado (${formatted.slice(0,4)} ****)`);
       window.db.saveUsuarios(usuarios);
-      document.getElementById('msg').textContent = 'Cartão gerado';
-      document.getElementById('msg').style.color = 'green';
+      msg.textContent = 'Cartão gerado com sucesso';
+      msg.style.color = 'green';
       render();
-      // Desabilita o botão após gerar o cartão
-      document.getElementById('gerar').disabled = true;
+      gerarBtn.disabled = true;
     });
+
+    render();
   </script>
 </body>
 </html>

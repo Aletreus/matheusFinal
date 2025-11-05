@@ -11,7 +11,7 @@
 <body>
   <nav class="dashboard-nav">
     <div class="nav-brand">
-      <img src="LogoComTexto.png" alt="InstinctBank" class="bank-logo" style="filter: none; height: 45px;">
+      <img src="icones/LogoComTexto.png" alt="InstinctBank" class="bank-logo" style="filter: none; height: 65px; width: auto;">
     </div>
     <div class="nav-user">
       <button onclick="window.location.href='painel.html'" class="btn-secondary">
@@ -148,9 +148,10 @@
         <p id="msgErro" style="color: red; margin-top: 1rem;"></p>
         <p id="msgSucesso" style="color: green; margin-top: 1rem;"></p>
 
-        <div style="margin-top: 1rem;">
-          <button id="btnSalvar" style="background: #1b5e20; color: white;">Salvar Alterações</button>
-          <button id="btnCancelar" style="margin-left: 1rem;">Cancelar</button>
+        <!-- BOTÕES CENTRALIZADOS -->
+        <div class="botoes-edicao">
+          <button id="btnSalvar" class="btn-salvar">Salvar Alterações</button>
+          <button id="btnCancelar" class="btn-cancelar">Cancelar</button>
         </div>
       </div>
     </section>
@@ -209,6 +210,41 @@
       background-color: #f0f0f0;
       cursor: not-allowed;
     }
+
+    /* ===== BOTÕES DE EDIÇÃO ===== */
+    .botoes-edicao {
+      display: flex;
+      justify-content: center;
+      gap: 1rem;
+      margin-top: 1.5rem;
+    }
+
+    .botoes-edicao button {
+      padding: 0.7rem 1.5rem;
+      font-size: 1rem;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+
+    .btn-salvar {
+      background-color: #1b5e20;
+      color: white;
+    }
+
+    .btn-salvar:hover {
+      background-color: #2e7d32;
+    }
+
+    .btn-cancelar {
+      background-color: #bdbdbd;
+      color: #2c2c2c;
+    }
+
+    .btn-cancelar:hover {
+      background-color: #9e9e9e;
+    }
   </style>
 
   <script>
@@ -217,7 +253,6 @@
       window.location.href = 'index.html';
     }
 
-    // Carrega os dados do perfil
     function carregarPerfil() {
       const usuarioAtual = window.db.getUsuarioAtual();
       const usuarios = window.db.getUsuarios();
@@ -229,15 +264,12 @@
       }
 
       const perfil = usuario.perfil;
-      
-      // Preenche os dados pessoais
       document.getElementById('perfilNome').textContent = perfil.nome || 'Não informado';
       document.getElementById('perfilCpf').textContent = perfil.cpf || 'Não informado';
       document.getElementById('perfilDataNascimento').textContent = perfil.dataNascimento || 'Não informado';
       document.getElementById('perfilTelefone').textContent = perfil.telefone || 'Não informado';
       document.getElementById('perfilEmail').textContent = perfil.email || 'Não informado';
-      
-      // Preenche os dados de endereço
+
       if (perfil.endereco) {
         document.getElementById('perfilCep').textContent = perfil.endereco.cep || 'Não informado';
         document.getElementById('perfilRua').textContent = perfil.endereco.rua || 'Não informado';
@@ -248,171 +280,95 @@
         document.getElementById('perfilEstado').textContent = perfil.endereco.estado || 'Não informado';
       }
 
-      // Preenche os dados da conta
       document.getElementById('perfilUsuario').textContent = usuarioAtual;
-      
-      // Encontra a data de criação no histórico
       const dataCriacao = usuario.historico[0].split('—')[0].trim();
       document.getElementById('perfilDataCriacao').textContent = dataCriacao;
     }
 
-    // Formata um telefone
-    function formatarTelefone(telefone) {
-      telefone = telefone.replace(/\D/g, '');
-      return telefone.replace(/(\d{2})(\d{5})(\d{4})/, "($1) $2-$3");
-    }
+    function formatarTelefone(t){return t.replace(/\D/g,"").replace(/(\d{2})(\d{5})(\d{4})/,"($1) $2-$3")}
+    function formatarCEP(c){return c.replace(/\D/g,"").replace(/(\d{5})(\d{3})/,"$1-$2")}
 
-    // Formata um CPF
-    function formatarCPF(cpf) {
-      cpf = cpf.replace(/\D/g, '');
-      return cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4");
-    }
+    document.getElementById('editTelefone').addEventListener('input',e=>{
+      let v=e.target.value.replace(/\D/g,'');if(v.length<=11)e.target.value=formatarTelefone(v);
+    });
+    document.getElementById('editCep').addEventListener('input',e=>{
+      let v=e.target.value.replace(/\D/g,'');if(v.length<=8)e.target.value=formatarCEP(v);
+    });
 
-    // Formata um CEP
-    function formatarCEP(cep) {
-      cep = cep.replace(/\D/g, '');
-      return cep.replace(/(\d{5})(\d{3})/, "$1-$2");
-    }
-
-    // Aplicar máscaras nos campos de edição
-    document.getElementById('editTelefone').addEventListener('input', function(e) {
-      let value = e.target.value.replace(/\D/g, '');
-      if (value.length <= 11) {
-        e.target.value = formatarTelefone(value);
+    document.getElementById('btnEditar').addEventListener('click',()=>{
+      document.getElementById('modoVisualizacao').style.display='none';
+      document.getElementById('modoEdicao').style.display='block';
+      const usuarioAtual=window.db.getUsuarioAtual();
+      const usuario=window.db.getUsuarios()[usuarioAtual];
+      const p=usuario.perfil;
+      document.getElementById('editNome').value=p.nome||'';
+      document.getElementById('editCpf').value=p.cpf||'';
+      document.getElementById('editDataNascimento').value=p.dataNascimento||'';
+      document.getElementById('editTelefone').value=p.telefone||'';
+      document.getElementById('editEmail').value=p.email||'';
+      if(p.endereco){
+        document.getElementById('editCep').value=p.endereco.cep||'';
+        document.getElementById('editRua').value=p.endereco.rua||'';
+        document.getElementById('editNumero').value=p.endereco.numero||'';
+        document.getElementById('editComplemento').value=p.endereco.complemento||'';
+        document.getElementById('editBairro').value=p.endereco.bairro||'';
+        document.getElementById('editCidade').value=p.endereco.cidade||'';
+        document.getElementById('editEstado').value=p.endereco.estado||'';
       }
     });
 
-    document.getElementById('editCep').addEventListener('input', function(e) {
-      let value = e.target.value.replace(/\D/g, '');
-      if (value.length <= 8) {
-        e.target.value = formatarCEP(value);
-      }
+    document.getElementById('btnCancelar').addEventListener('click',()=>{
+      document.getElementById('modoEdicao').style.display='none';
+      document.getElementById('modoVisualizacao').style.display='block';
+      document.getElementById('msgErro').textContent='';
+      document.getElementById('msgSucesso').textContent='';
+      document.getElementById('senhaAtual').value='';
+      document.getElementById('novaSenha').value='';
+      document.getElementById('confirmarNovaSenha').value='';
     });
 
-    // Botão de editar perfil
-    document.getElementById('btnEditar').addEventListener('click', function() {
-      document.getElementById('modoVisualizacao').style.display = 'none';
-      document.getElementById('modoEdicao').style.display = 'block';
-      
-      // Preenche os campos do formulário com os dados atuais
-      const usuarioAtual = window.db.getUsuarioAtual();
-      const usuarios = window.db.getUsuarios();
-      const usuario = usuarios[usuarioAtual];
-      const perfil = usuario.perfil;
-
-      document.getElementById('editNome').value = perfil.nome || '';
-      document.getElementById('editCpf').value = perfil.cpf || '';
-      document.getElementById('editDataNascimento').value = perfil.dataNascimento || '';
-      document.getElementById('editTelefone').value = perfil.telefone || '';
-      document.getElementById('editEmail').value = perfil.email || '';
-
-      if (perfil.endereco) {
-        document.getElementById('editCep').value = perfil.endereco.cep || '';
-        document.getElementById('editRua').value = perfil.endereco.rua || '';
-        document.getElementById('editNumero').value = perfil.endereco.numero || '';
-        document.getElementById('editComplemento').value = perfil.endereco.complemento || '';
-        document.getElementById('editBairro').value = perfil.endereco.bairro || '';
-        document.getElementById('editCidade').value = perfil.endereco.cidade || '';
-        document.getElementById('editEstado').value = perfil.endereco.estado || '';
+    document.getElementById('btnSalvar').addEventListener('click',()=>{
+      const msgErro=document.getElementById('msgErro');
+      const msgSucesso=document.getElementById('msgSucesso');
+      msgErro.textContent='';msgSucesso.textContent='';
+      const usuarioAtual=window.db.getUsuarioAtual();
+      const usuarios=window.db.getUsuarios();
+      const usuario=usuarios[usuarioAtual];
+      const nome=document.getElementById('editNome').value.trim();
+      const email=document.getElementById('editEmail').value.trim();
+      const telefone=document.getElementById('editTelefone').value.trim();
+      if(!nome||!email||!telefone){msgErro.textContent='Nome, email e telefone são obrigatórios';return;}
+      if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){msgErro.textContent='Email inválido';return;}
+      const senhaAtual=document.getElementById('senhaAtual').value;
+      const novaSenha=document.getElementById('novaSenha').value;
+      const confirmarNovaSenha=document.getElementById('confirmarNovaSenha').value;
+      if(senhaAtual||novaSenha||confirmarNovaSenha){
+        if(senhaAtual!==usuario.senha){msgErro.textContent='Senha atual incorreta';return;}
+        if(novaSenha!==confirmarNovaSenha){msgErro.textContent='As novas senhas não coincidem';return;}
+        if(novaSenha.length<6){msgErro.textContent='A nova senha deve ter pelo menos 6 caracteres';return;}
+        usuario.senha=novaSenha;
       }
-    });
-
-    // Botão de cancelar edição
-    document.getElementById('btnCancelar').addEventListener('click', function() {
-      document.getElementById('modoEdicao').style.display = 'none';
-      document.getElementById('modoVisualizacao').style.display = 'block';
-      document.getElementById('msgErro').textContent = '';
-      document.getElementById('msgSucesso').textContent = '';
-      document.getElementById('senhaAtual').value = '';
-      document.getElementById('novaSenha').value = '';
-      document.getElementById('confirmarNovaSenha').value = '';
-    });
-
-    // Botão de salvar alterações
-    document.getElementById('btnSalvar').addEventListener('click', function() {
-      const msgErro = document.getElementById('msgErro');
-      const msgSucesso = document.getElementById('msgSucesso');
-      msgErro.textContent = '';
-      msgSucesso.textContent = '';
-
-      const usuarioAtual = window.db.getUsuarioAtual();
-      const usuarios = window.db.getUsuarios();
-      const usuario = usuarios[usuarioAtual];
-
-      // Validação dos campos obrigatórios
-      const nome = document.getElementById('editNome').value.trim();
-      const email = document.getElementById('editEmail').value.trim();
-      const telefone = document.getElementById('editTelefone').value.trim();
-
-      if (!nome || !email || !telefone) {
-        msgErro.textContent = 'Nome, email e telefone são obrigatórios';
-        return;
-      }
-
-      // Validação de email
-      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-        msgErro.textContent = 'Email inválido';
-        return;
-      }
-
-      // Validação da alteração de senha
-      const senhaAtual = document.getElementById('senhaAtual').value;
-      const novaSenha = document.getElementById('novaSenha').value;
-      const confirmarNovaSenha = document.getElementById('confirmarNovaSenha').value;
-
-      if (senhaAtual || novaSenha || confirmarNovaSenha) {
-        if (senhaAtual !== usuario.senha) {
-          msgErro.textContent = 'Senha atual incorreta';
-          return;
-        }
-        if (novaSenha !== confirmarNovaSenha) {
-          msgErro.textContent = 'As novas senhas não coincidem';
-          return;
-        }
-        if (novaSenha.length < 6) {
-          msgErro.textContent = 'A nova senha deve ter pelo menos 6 caracteres';
-          return;
-        }
-        usuario.senha = novaSenha;
-      }
-
-      // Atualiza os dados do perfil
-      usuario.perfil = {
-        ...usuario.perfil,
-        nome,
-        email,
-        telefone,
-        dataNascimento: document.getElementById('editDataNascimento').value,
-        endereco: {
-          cep: document.getElementById('editCep').value,
-          rua: document.getElementById('editRua').value,
-          numero: document.getElementById('editNumero').value,
-          complemento: document.getElementById('editComplemento').value,
-          bairro: document.getElementById('editBairro').value,
-          cidade: document.getElementById('editCidade').value,
-          estado: document.getElementById('editEstado').value
-        }
-      };
-
-      // Salva as alterações
+      usuario.perfil={...usuario.perfil,nome,email,telefone,
+        dataNascimento:document.getElementById('editDataNascimento').value,
+        endereco:{
+          cep:document.getElementById('editCep').value,
+          rua:document.getElementById('editRua').value,
+          numero:document.getElementById('editNumero').value,
+          complemento:document.getElementById('editComplemento').value,
+          bairro:document.getElementById('editBairro').value,
+          cidade:document.getElementById('editCidade').value,
+          estado:document.getElementById('editEstado').value
+        }};
       window.db.saveUsuarios(usuarios);
-      
-      // Atualiza a visualização
       carregarPerfil();
-      
-      // Volta para o modo de visualização
-      document.getElementById('modoEdicao').style.display = 'none';
-      document.getElementById('modoVisualizacao').style.display = 'block';
-      
-      // Limpa os campos de senha
-      document.getElementById('senhaAtual').value = '';
-      document.getElementById('novaSenha').value = '';
-      document.getElementById('confirmarNovaSenha').value = '';
-      
-      msgSucesso.textContent = 'Perfil atualizado com sucesso!';
+      document.getElementById('modoEdicao').style.display='none';
+      document.getElementById('modoVisualizacao').style.display='block';
+      document.getElementById('senhaAtual').value='';
+      document.getElementById('novaSenha').value='';
+      document.getElementById('confirmarNovaSenha').value='';
+      msgSucesso.textContent='Perfil atualizado com sucesso!';
     });
 
-    // Carrega o perfil quando a página é aberta
     carregarPerfil();
   </script>
 </body>

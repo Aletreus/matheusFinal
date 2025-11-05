@@ -12,7 +12,7 @@
 <body class="dashboard-body">
   <nav class="dashboard-nav">
     <div class="nav-brand">
-      <img src="LogoComTexto.png" alt="InstinctBank" class="bank-logo" style="filter: none; height: 45px;">
+      <img src="icones/LogoComTexto.png" alt="InstinctBank" class="bank-logo" style="filter: none; height: 65px; width: auto;">
     </div>
     <div class="nav-user">
       <span id="userGreeting"></span>
@@ -325,7 +325,6 @@
     const usuarios = window.db.getUsuarios();
     const usuario = usuarios[usuarioAtual];
 
-    // Define saudação baseada na hora do dia
     function getSaudacao() {
       const hora = new Date().getHours();
       if (hora >= 5 && hora < 12) return "Bom dia";
@@ -333,7 +332,6 @@
       return "Boa noite";
     }
 
-    // Formata valor para moeda
     function formatarMoeda(valor) {
       return valor.toLocaleString('pt-BR', {
         minimumFractionDigits: 2,
@@ -341,47 +339,49 @@
       });
     }
 
-    // Formata data
-    function formatarData(data) {
-      return new Date(data).toLocaleDateString('pt-BR', {
-        day: '2-digit',
-        month: '2-digit',
-        year: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit'
-      });
+    function parseDataBR(dataString) {
+      const partes = dataString.match(/(\d{2})\/(\d{2})\/(\d{4}),\s*(\d{2}):(\d{2})/);
+      if (!partes) return null;
+      const [_, dia, mes, ano, hora, minuto] = partes;
+      return new Date(ano, mes - 1, dia, hora, minuto);
     }
 
-    // Atualiza informações do usuário
-    document.getElementById('userGreeting').textContent = `${getSaudacao()}, ${usuario.perfil?.nome?.split(' ')[0] || usuarioAtual}`;
+    document.getElementById('userGreeting').textContent =
+      `${getSaudacao()}, ${usuario.perfil?.nome?.split(' ')[0] || usuarioAtual}`;
     document.getElementById('saldo').textContent = formatarMoeda(usuario.saldo || 0);
 
+    // === FILTRO DE TRANSAÇÕES ===
     function filtrarTransacoes() {
       const dias = parseInt(document.getElementById('periodoFiltro').value);
       const tipo = document.getElementById('tipoFiltro').value;
       
       let transacoes = usuario.historico.slice();
-      
+
       // Filtro por período
       if (dias > 0) {
         const dataLimite = new Date();
         dataLimite.setDate(dataLimite.getDate() - dias);
+
         transacoes = transacoes.filter(transacao => {
-          const dataTransacao = new Date(transacao.split('—')[0].trim());
-          return dataTransacao >= dataLimite;
+          const dataTexto = transacao.split('—')[0].trim();
+          const dataTransacao = parseDataBR(dataTexto);
+          return dataTransacao && dataTransacao >= dataLimite;
         });
       }
 
-      // Filtro por tipo
+      // Filtro por tipo (corrigido com acentos)
       if (tipo !== 'todos') {
-        transacoes = transacoes.filter(transacao => 
-          transacao.toLowerCase().includes(tipo.toLowerCase())
-        );
+        const normalizar = str => str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+        transacoes = transacoes.filter(transacao => {
+          const texto = normalizar(transacao);
+          return texto.includes(normalizar(tipo));
+        });
       }
 
       renderizarTransacoes(transacoes);
     }
 
+    // === RENDERIZAÇÃO DO EXTRATO CORRIGIDA ===
     function renderizarTransacoes(transacoes) {
       const extratoContainer = document.getElementById('extrato');
       
@@ -390,37 +390,38 @@
         return;
       }
 
-      extratoContainer.innerHTML = transacoes.reverse().map(transacao => {
+      extratoContainer.innerHTML = transacoes.slice().reverse().map(transacao => {
         const partes = transacao.split('—');
         const data = partes[0].trim();
-        const descricao = partes[1].trim();
-        
+        const descricao = partes[1]?.trim() || '';
+
         let icone = 'money-bill-transfer';
         let valor = '';
         let classe = '';
-        
-        if (descricao.toLowerCase().includes('depósito')) {
+
+        const descLower = descricao.toLowerCase();
+        const matchValor = descricao.match(/r\$ ?([\d,.]+)/i);
+        const valorFormatado = matchValor ? matchValor[1] : '';
+
+        if (descLower.includes('depósito')) {
           icone = 'money-bill-wave';
-          // Extrai o valor do depósito da descrição
-          valor = descricao.match(/R\$ ([\d,.]+)/);
-          if (valor) {
-            classe = 'amount-positive';
-            valor = `+ R$ ${valor[1]}`;
-          }
-        } else if (descricao.toLowerCase().includes('transferência')) {
+          valor = `+ R$ ${valorFormatado}`;
+          classe = 'amount-positive';
+        } 
+        else if (descLower.includes('transferência')) {
           icone = 'exchange-alt';
-          valor = descricao.match(/R\$ ([\d,.]+)/);
-          if (valor) {
+          if (descLower.includes('recebida') || descLower.includes('recebido') || descLower.includes('de')) {
+            valor = `+ R$ ${valorFormatado}`;
+            classe = 'amount-positive';
+          } else {
+            valor = `- R$ ${valorFormatado}`;
             classe = 'amount-negative';
-            valor = `- R$ ${valor[1]}`;
           }
-        } else if (descricao.toLowerCase().includes('pagamento')) {
+        } 
+        else if (descLower.includes('pagamento')) {
           icone = 'receipt';
-          valor = descricao.match(/R\$ ([\d,.]+)/);
-          if (valor) {
-            classe = 'amount-negative';
-            valor = `- R$ ${valor[1]}`;
-          }
+          valor = `- R$ ${valorFormatado}`;
+          classe = 'amount-negative';
         }
 
         return `
@@ -431,7 +432,7 @@
               </div>
               <div class="transaction-details">
                 <span class="transaction-name">${descricao}</span>
-                <span class="transaction-date">${formatarData(data)}</span>
+                <span class="transaction-date">${data}</span>
               </div>
             </div>
             ${valor ? `<div class="transaction-amount ${classe}">${valor}</div>` : ''}
@@ -440,11 +441,8 @@
       }).join('');
     }
 
-    // Adiciona eventos aos filtros
     document.getElementById('periodoFiltro').addEventListener('change', filtrarTransacoes);
     document.getElementById('tipoFiltro').addEventListener('change', filtrarTransacoes);
-
-    // Carrega transações iniciais
     filtrarTransacoes();
 
     function sair() {

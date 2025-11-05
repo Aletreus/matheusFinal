@@ -26,7 +26,7 @@
       <div id="step1" class="step active">
         <h2>Dados Pessoais</h2>
         <input id="nome" placeholder="Nome completo" />
-        <input id="cpf" placeholder="CPF" />
+        <input id="cpf" placeholder="CPF" maxlength="14" />
         <input id="dataNascimento" type="date" placeholder="Data de Nascimento" />
         <input id="telefone" placeholder="Telefone" />
         <input id="email" placeholder="Email" />
@@ -58,9 +58,7 @@
 
       <div id="step4" class="step">
         <h2>Confirmação</h2>
-        <div id="resumoCadastro" style="margin: 1rem 0;">
-          <!-- Preenchido via JavaScript -->
-        </div>
+        <div id="resumoCadastro" style="margin: 1rem 0;"></div>
         <button onclick="prevStep(4)">Anterior</button>
         <button id="btnConcluir">Concluir Cadastro</button>
       </div>
@@ -76,12 +74,8 @@
   </main>
 
   <style>
-    .step {
-      display: none;
-    }
-    .step.active {
-      display: block;
-    }
+    .step { display: none; }
+    .step.active { display: block; }
     .progress-bar {
       display: flex;
       justify-content: space-between;
@@ -118,6 +112,26 @@
     let currentStep = 1;
     const formData = {};
 
+    // === Função de validação de CPF ===
+    function validarCPF(cpf) {
+      cpf = cpf.replace(/[^\d]+/g, '');
+      if (cpf.length !== 11 || /^(\d)\1+$/.test(cpf)) return false;
+      let soma = 0, resto;
+
+      for (let i = 1; i <= 9; i++)
+        soma += parseInt(cpf.substring(i - 1, i)) * (11 - i);
+      resto = (soma * 10) % 11;
+      if (resto === 10 || resto === 11) resto = 0;
+      if (resto !== parseInt(cpf.substring(9, 10))) return false;
+
+      soma = 0;
+      for (let i = 1; i <= 10; i++)
+        soma += parseInt(cpf.substring(i - 1, i)) * (12 - i);
+      resto = (soma * 10) % 11;
+      if (resto === 10 || resto === 11) resto = 0;
+      return resto === parseInt(cpf.substring(10, 11));
+    }
+
     function validateStep(step) {
       const msg = document.getElementById('msg');
       msg.textContent = '';
@@ -134,6 +148,13 @@
             msg.textContent = 'Preencha todos os campos';
             return false;
           }
+
+          // ✅ Validação real do CPF
+          if (!validarCPF(cpf)) {
+            msg.textContent = 'CPF inválido';
+            return false;
+          }
+
           formData.nome = nome;
           formData.cpf = cpf;
           formData.dataNascimento = dataNascimento;
@@ -178,11 +199,8 @@
 
     function updateProgressBar(step) {
       document.querySelectorAll('.progress-step').forEach((el, index) => {
-        if (index + 1 <= step) {
-          el.classList.add('active');
-        } else {
-          el.classList.remove('active');
-        }
+        if (index + 1 <= step) el.classList.add('active');
+        else el.classList.remove('active');
       });
     }
 
@@ -190,15 +208,11 @@
       document.querySelectorAll('.step').forEach(el => el.classList.remove('active'));
       document.getElementById('step' + step).classList.add('active');
       updateProgressBar(step);
-      if (step === 4) {
-        updateResumo();
-      }
+      if (step === 4) updateResumo();
     }
 
     function nextStep(currentStep) {
-      if (validateStep(currentStep)) {
-        showStep(currentStep + 1);
-      }
+      if (validateStep(currentStep)) showStep(currentStep + 1);
     }
 
     function prevStep(currentStep) {
@@ -226,33 +240,29 @@
       `;
     }
 
-    // Máscara para CPF
+    // === Máscaras ===
     document.getElementById('cpf').addEventListener('input', function(e) {
       let value = e.target.value.replace(/\D/g, '');
-      if (value.length <= 11) {
+      if (value.length <= 11)
         value = value.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4");
-        e.target.value = value;
-      }
+      e.target.value = value;
     });
 
-    // Máscara para telefone
     document.getElementById('telefone').addEventListener('input', function(e) {
       let value = e.target.value.replace(/\D/g, '');
-      if (value.length <= 11) {
+      if (value.length <= 11)
         value = value.replace(/(\d{2})(\d{5})(\d{4})/, "($1) $2-$3");
-        e.target.value = value;
-      }
+      e.target.value = value;
     });
 
-    // Máscara para CEP
     document.getElementById('cep').addEventListener('input', function(e) {
       let value = e.target.value.replace(/\D/g, '');
-      if (value.length <= 8) {
+      if (value.length <= 8)
         value = value.replace(/(\d{5})(\d{3})/, "$1-$2");
-        e.target.value = value;
-      }
+      e.target.value = value;
     });
 
+    // === Concluir Cadastro ===
     document.getElementById('btnConcluir').addEventListener('click', function(){
       const msg = document.getElementById('msg');
       const usuarios = window.db.getUsuarios();
