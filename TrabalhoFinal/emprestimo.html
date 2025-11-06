@@ -84,7 +84,7 @@
       msg.style.color = 'red';
       if (!(v > 0)) { msg.textContent = 'Valor inválido para empréstimo.'; return; }
 
-      const max = 5000;
+      const max = 9000;
       if (v > max) { msg.textContent = `Valor acima do limite permitido (R$ ${max}).`; return; }
 
       const taxa = 0.05; // 5%

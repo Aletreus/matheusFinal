@@ -135,27 +135,6 @@ function renderCartaoVirtual() {
   }
 }
 
-function solicitarEmprestimo() {
-  const valor = parseFloat(document.getElementById("emprestimoAmount").value);
-  if (!(valor > 0)) {
-    alert("Valor de empréstimo inválido.");
-    return;
-  }
-  // regra simples: limite máximo (ex.: R$5000) e taxa fixa
-  const max = 5000;
-  if (valor > max) {
-    alert(`Valor acima do limite de empréstimo (R$ ${max}).`);
-    return;
-  }
-  const taxa = 0.05; // 5% de taxa única para simplificar
-  const total = valor * (1 + taxa);
-  usuarios[usuarioAtual].saldo += valor;
-  usuarios[usuarioAtual].emprestimos.push({ solicitado: valor, totalAPagar: total, taxa, data: new Date().toISOString() });
-  adicionarHistorico(`Empréstimo aprovado R$ ${valor.toFixed(2)} (total a pagar R$ ${total.toFixed(2)})`);
-  atualizarSaldo();
-  document.getElementById("emprestimoAmount").value = "";
-}
-
 function adicionarHistorico(texto) {
   // adiciona ao array do usuário e atualiza DOM
   usuarios[usuarioAtual].historico.unshift(`${new Date().toLocaleString()} — ${texto}`);

@@ -42,7 +42,7 @@
       </section>
 
       <!-- Ações Rápidas -->
-      <section class="dashboard-card quick-actions">
+      <section class="dashboard-card quick-actions" style="overflow-y: auto;">
         <div class="card-header">
           <h3><i class="fas fa-bolt"></i> Ações Rápidas</h3>
         </div>
@@ -63,6 +63,10 @@
             <button onclick="location.href='cartoes.html'" class="action-button">
               <i class="fas fa-credit-card"></i>
               <span>Cartões</span>
+            </button>
+            <button onclick="location.href='emprestimo.html'" class="action-button">
+              <i class="fas fa-hand-holding-usd"></i>
+              <span>Empréstimo</span>
             </button>
           </div>
         </div>
@@ -171,10 +175,12 @@
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
       gap: 1.5rem;
+      align-items: center;
     }
 
     .dashboard-card {
       background: white;
+      height: 17.1rem;
       border-radius: 10px;
       box-shadow: 0 2px 4px rgba(0,0,0,0.05);
       overflow: hidden;
