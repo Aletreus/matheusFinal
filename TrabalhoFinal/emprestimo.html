@@ -82,7 +82,7 @@
       const v = parseFloat(document.getElementById('valorEmprestimo').value);
       const msg = document.getElementById('msg');
       msg.style.color = 'red';
-      if (!(v > 0)) { msg.textContent = 'Valor inválido para empréstimo.'; return; }
+      if (!(v > 0.9)) { msg.textContent = 'Valor inválido para empréstimo. Valor Mínimo R$1.00'; return; }
 
       const max = 9000;
       if (v > max) { msg.textContent = `Valor acima do limite permitido (R$ ${max}).`; return; }

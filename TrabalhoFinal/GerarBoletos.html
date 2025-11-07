@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>InstinctBank — Início</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="shortcut icon" href="icones/LogoInstinct.png" type="image/x-icon">
+  <style>
+    .logo-header {
+      text-align: center;
+      padding: 2rem;
+    }
+    .logo-header img {
+      max-height: 80px;
+    }
+    *{
+        font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
+    }
+    body{
+        background-color: #F8FFF8;
+    }
+  </style>
+</head>
+<body>
+  <header class="logo-header" style="text-align: center;
+      padding: 10px;">
+    <a href="painel.html"><img src="icones/LogoComTexto.png" alt="InstinctBank Logo" style="height: 40px;"></a>
+    <a href="painel.html" style="text-decoration: none; color: white;">
+      <h2 style="font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif; font-size: x-large; position: absolute;left: 65px; top: 20px;">InstinctBank</h2>
+    </a>
+    <button onclick="logout()" style="cursor: pointer; padding: 5px; width: 60px; border-radius: 10px; border: 0; font-size: 18px; font-weight: 700; color: white; background-color: #2e7d32;">
+        <i>Sair</i> 
+      </button>
+  </header>
+  <main>
+    <div style="width: 500px; height: 400px; background-color: white; border-radius: 10px; text-align:center; box-shadow:5px 5px 5px rgba(0, 0, 0, 0.089);">
+        <input type="text" style="width: 400px; height:45px; border:0; border-radius:10px; margin-top:50px; padding:5px; padding-left:20px; font-size:14px; box-shadow:5px 5px 5px rgba(0, 0, 0, 0.089);" placeholder="Digite o Preço do Boleto.">
+        <input type="text" style="width: 400px; height:45px; border:0; border-radius:10px; margin-top:30px; padding:5px; padding-left:20px; font-size:14px; box-shadow:5px 5px 5px rgba(0, 0, 0, 0.089);" placeholder="Digite o N° da Conta para Receber">
+    </div>
+    
+  </main>
+  <footer>
+    <p>© 2025 InstinctBank</p>
+  </footer>
+</body>
+</html>

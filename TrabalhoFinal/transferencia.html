@@ -43,7 +43,7 @@
       msg.style.color='red';
       if (!dest || !usuarios[dest]) { msg.textContent='Destinatário inválido'; return; }
       if (dest === atual) { msg.textContent='Não é possível transferir para si mesmo'; return; }
-      if (!(valor>0) || valor > usuarios[atual].saldo) { msg.textContent='Valor inválido ou saldo insuficiente'; return; }
+      if (!(valor>0.009) || valor > usuarios[atual].saldo) { msg.textContent='Valor inválido ou saldo insuficiente, Valor mínimo R$0.01'; return; }
       usuarios[atual].saldo -= valor;
       usuarios[dest].saldo += valor;
       usuarios[atual].historico.unshift(`${new Date().toLocaleString()} — Transferência de R$ ${valor.toFixed(2)} para ${dest}`);
