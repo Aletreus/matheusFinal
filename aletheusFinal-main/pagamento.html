@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>InstinctBank — Pagamentos</title>
+  <link rel="shortcut icon" href="icones/LogoInstinct.png" type="image/x-icon">
+  <style>
+    a{
+      text-decoration: none;
+    }
+    button{
+      cursor: pointer;
+      padding: 5px 10px;
+      border-radius: 6px;
+      border: none;
+      font-size: 1rem;
+      background-color: #2e7d32;
+      color: white;
+    }
+    body {
+      font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
+      background-color: #F8FFF8;
+      padding: 1rem;
+    }
+    .card {
+      background: #fff;
+      border-radius: 10px;
+      padding: 1.5rem;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      max-width: 550px;
+      margin: auto;
+    }
+    input, button {
+      display: block;
+      margin: .5rem 0;
+      padding: .5rem;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    table {
+      width: 100%;
+      margin-top: 1rem;
+      border-collapse: collapse;
+    }
+    th, td {
+      border-bottom: 1px solid #ddd;
+      padding: .5rem;
+      text-align: center;
+    }
+    th {
+      background: #eee;
+    }
+    .pago { color: gray; text-decoration: line-through; }
+    .saldo {
+      background: #E8F5E9;
+      border-radius: 8px;
+      padding: .5rem;
+      text-align: center;
+      margin-bottom: 1rem;
+    }
+    .atrasado {
+      color: red;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <header style="text-align:center;">
+    <a href="painel.html"><img src="icones/LogoComTexto.png" style="height:40px"></a>
+    <h2>InstinctBank — Pagamentos</h2>
+  </header>
+
+  <main>
+    <section class="card">
+      <div class="saldo">
+        <strong>Saldo atual:</strong> R$ <span id="saldoAtual">0,00</span>
+      </div>
+
+      <h3>Pagar Boleto</h3>
+      <input id="codigo" placeholder="Código do boleto" />
+      <button id="btnPagar">Pagar</button>
+      <p id="msg"></p>
+
+      <h3>Boletos em Aberto</h3>
+      <table id="listaBoletos">
+        <thead>
+          <tr><th>Código</th><th>Valor</th><th>Vencimento</th><th>Status</th></tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+
+      <a href="GerarBoletos.html"><button>Gerar Boletos</button></a>
+      <a href="painel.html"><button>Voltar ao Painel</button></a>
+    </section>
+  </main>
+
+  <footer style="text-align:center;margin-top:2rem;">
+    <p>© 2025 InstinctBank</p>
+  </footer>
+
+  <script src="data.js"></script>
+  <script>
+    const tabela = document.querySelector('#listaBoletos tbody');
+    const msg = document.getElementById('msg');
+    const saldoSpan = document.getElementById('saldoAtual');
+    const JUROS_MENSAL = 0.03;
+
+    function carregarBoletos() {
+      return JSON.parse(localStorage.getItem('boletos') || '[]');
+    }
+
+    function salvarBoletos(lista) {
+      localStorage.setItem('boletos', JSON.stringify(lista));
+    }
+
+    function exibirSaldo() {
+      const usuarioAtual = db.getUsuarioAtual();
+      const usuarios = db.getUsuarios();
+      if (!usuarioAtual || !usuarios[usuarioAtual]) {
+        saldoSpan.textContent = "0,00";
+        return;
+      }
+      const saldo = usuarios[usuarioAtual].saldo || 0;
+      saldoSpan.textContent = saldo.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+    }
+
+    function mesesDeAtraso(vencimento) {
+      const hoje = new Date();
+      const v = new Date(vencimento.split('/').reverse().join('-'));
+      if (hoje <= v) return 0;
+      const anos = hoje.getFullYear() - v.getFullYear();
+      const meses = hoje.getMonth() - v.getMonth();
+      const total = anos * 12 + meses;
+      return total > 0 ? total : 0;
+    }
+
+    function aplicarJurosBoletos() {
+      let boletos = carregarBoletos();
+      let alterou = false;
+
+      boletos.forEach(b => {
+        if (!b.pago) {
+          const atraso = mesesDeAtraso(b.vencimento);
+          if (atraso > 0 && !b.jurosAplicado) b.jurosAplicado = 0;
+
+          if (atraso > b.jurosAplicado) {
+            const vezes = atraso - b.jurosAplicado;
+            for (let i = 0; i < vezes; i++) {
+              b.valor *= (1 + JUROS_MENSAL);
+            }
+            b.jurosAplicado = atraso;
+            alterou = true;
+          }
+        }
+      });
+
+      if (alterou) salvarBoletos(boletos);
+    }
+
+    function exibirBoletos() {
+      aplicarJurosBoletos(); 
+      const boletos = carregarBoletos();
+      tabela.innerHTML = '';
+      boletos.forEach(b => {
+        const tr = document.createElement('tr');
+        const atraso = mesesDeAtraso(b.vencimento);
+        const vencido = atraso > 0 && !b.pago;
+
+        tr.innerHTML = `
+          <td>${b.codigo}</td>
+          <td>${b.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
+          <td>${b.vencimento}</td>
+          <td class="${b.pago ? 'pago' : vencido ? 'atrasado' : ''}">
+            ${b.pago ? 'Pago' : vencido ? 'Atrasado (' + atraso + ' mês' + (atraso>1?'es':'') + ')' : 'Em aberto'}
+          </td>
+        `;
+        tabela.appendChild(tr);
+      });
+    }
+
+    function pagarBoleto() {
+      const codigo = document.getElementById('codigo').value.trim();
+      if (!codigo) {
+        msg.style.color = 'red';
+        msg.textContent = 'Digite o código do boleto.';
+        return;
+      }
+
+      const usuarioAtual = db.getUsuarioAtual();
+      const usuarios = db.getUsuarios();
+
+      if (!usuarioAtual || !usuarios[usuarioAtual]) {
+        msg.style.color = 'red';
+        msg.textContent = 'Usuário não autenticado.';
+        return;
+      }
+
+      let boletos = carregarBoletos();
+      const boleto = boletos.find(b => b.codigo === codigo);
+
+      if (!boleto) {
+        msg.style.color = 'red';
+        msg.textContent = 'Boleto não encontrado.';
+        return;
+      }
+      if (boleto.pago) {
+        msg.style.color = 'red';
+        msg.textContent = 'Este boleto já foi pago.';
+        return;
+      }
+
+      const saldoAtual = usuarios[usuarioAtual].saldo;
+
+      if (saldoAtual < boleto.valor) {
+        msg.style.color = 'red';
+        msg.textContent = 'Saldo insuficiente para pagar este boleto.';
+        return;
+      }
+
+      usuarios[usuarioAtual].saldo -= boleto.valor;
+      boleto.pago = true;
+      boleto.dataPagamento = new Date().toLocaleDateString('pt-BR');
+
+      salvarBoletos(boletos);
+      db.saveUsuarios(usuarios);
+
+      msg.style.color = 'green';
+      msg.textContent = `✅ Boleto ${codigo} pago com sucesso! Valor pago: R$ ${boleto.valor.toFixed(2)}`;
+      document.getElementById('codigo').value = '';
+
+      exibirBoletos();
+      exibirSaldo();
+    }
+
+    document.getElementById('btnPagar').addEventListener('click', pagarBoleto);
+    exibirBoletos();
+    exibirSaldo();
+  </script>
+</body>
+</html>

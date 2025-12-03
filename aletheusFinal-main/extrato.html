@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>InstinctBank — Extrato</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="data.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <link rel="shortcut icon" href="icones/LogoInstinct.png" type="image/x-icon">
+</head>
+  <style>
+    a{
+      text-decoration: none;
+    }
+    button{
+      cursor: pointer;
+      padding: 5px 10px;
+      border-radius: 6px;
+      border: none;
+      font-size: 1rem;
+      background-color: #2e7d32;
+      color: white;
+    }
+
+    .dashboard-body {
+      margin: 0;
+      padding: 0;
+      background-color: #f0f2f5;
+      min-height: 100vh;
+    }
+
+    .dashboard-nav {
+      background: #1b5e20;
+      color: white;
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .nav-brand {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      font-size: 1.5rem;
+      font-weight: bold;
+    }
+
+    .bank-logo {
+      height: 40px;
+      width: 40px;
+      filter: brightness(0) invert(1);
+    }
+
+    .nav-user {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .dashboard-main {
+      padding: 2rem;
+    }
+
+    .dashboard-grid.single-column {
+      max-width: 800px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    .dashboard-card {
+      background: white;
+      border-radius: 10px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+      overflow: hidden;
+    }
+
+    .balance-card {
+      background: linear-gradient(135deg, #1b5e20 0%, #2e7d32 100%);
+      color: white;
+    }
+
+    .card-header {
+      padding: 1rem;
+      border-bottom: 1px solid #eee;
+    }
+
+    .balance-card .card-header {
+      border-bottom-color: rgba(255,255,255,0.1);
+    }
+
+    .card-header h3 {
+      margin: 0;
+      color: #2c3e50;
+      font-size: 1.1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .balance-card .card-header h3 {
+      color: white;
+    }
+
+    .card-body {
+      padding: 1.5rem;
+    }
+
+    .balance-amount {
+      font-size: 2.5rem;
+      font-weight: bold;
+      margin: 1rem 0;
+      text-align: center;
+    }
+
+    .currency {
+      font-size: 1.5rem;
+      margin-right: 0.5rem;
+    }
+
+    .filters-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+    }
+
+    .filter-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .filter-group label {
+      font-weight: 500;
+      color: #2c3e50;
+    }
+
+    .select-custom {
+      padding: 0.5rem;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 1rem;
+      color: #2c3e50;
+      background: #fff;
+    }
+
+    .select-custom:focus {
+      outline: none;
+      border-color: #1b5e20;
+      box-shadow: 0 0 0 2px rgba(27, 94, 32, 0.2);
+    }
+
+    .transactions-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .transaction-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem;
+      border-bottom: 1px solid #eee;
+      transition: background-color 0.3s;
+    }
+
+    .transaction-item:hover {
+      background-color: #f8f9fa;
+    }
+
+    .transaction-info {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .transaction-icon {
+      width: 40px;
+      height: 40px;
+      background: #f0f2f5;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #1b5e20;
+    }
+
+    .transaction-details {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+
+    .transaction-name {
+      font-weight: 500;
+      color: #2c3e50;
+    }
+
+    .transaction-date {
+      font-size: 0.85rem;
+      color: #6c757d;
+    }
+
+    .transaction-amount {
+      font-weight: 500;
+    }
+
+    .amount-positive {
+      color: #2e7d32;
+    }
+
+    .amount-negative {
+      color: #d32f2f;
+    }
+
+    .btn-logout, .btn-secondary {
+      background: rgba(255,255,255,0.1);
+      color: white;
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 4px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: background 0.3s;
+    }
+
+    .btn-logout:hover, .btn-secondary:hover {
+      background: rgba(255,255,255,0.2);
+    }
+
+    @media (max-width: 768px) {
+      .dashboard-main {
+        padding: 1rem;
+      }
+      
+      .filters-grid {
+        grid-template-columns: 1fr;
+      }
+      
+      .transaction-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+      }
+      
+      .transaction-info {
+        width: 100%;
+      }
+    }
+  </style>
+
+<body class="dashboard-body">
+  
+  <header class="logo-header" style="text-align: center;
+      padding: 10px;">
+    <a href="painel.html"><img src="icones/LogoComTexto.png" alt="InstinctBank Logo" style="height: 40px;"></a>
+    <a href="painel.html" style="text-decoration: none; color: white;">
+      <h2 style="font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif; font-size: x-large; position: absolute;left: 65px; top: 20px;">InstinctBank</h2>
+    </a>
+    <button onclick="logout1()" style="cursor: pointer; padding: 5px; width: 60px; border-radius: 10px; border: 0; font-size: 18px; font-weight: 700; color: white; background-color: #2e7d32;" a = "painel.html" >
+        Sair
+      </button>
+  </header>
+
+  <main class="dashboard-main">
+    <div class="dashboard-grid single-column">
+      <section class="dashboard-card balance-card">
+        <div class="card-header">
+          <h3><i class="fas fa-wallet"></i> Saldo Disponível</h3>
+        </div>
+        <div class="card-body">
+          <div class="balance-amount">
+            <span class="currency">R$</span>
+            <span class="amount" id="saldo">0.00</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="dashboard-card">
+        <div class="card-header">
+          <h3><i class="fas fa-filter"></i> Filtros</h3>
+        </div>
+        <div class="card-body">
+          <div class="filters-grid">
+            <div class="filter-group">
+              <label>Período</label>
+              <select id="periodoFiltro" class="select-custom">
+                <option value="7">Últimos 7 dias</option>
+                <option value="15">Últimos 15 dias</option>
+                <option value="30" selected>Últimos 30 dias</option>
+                <option value="90">Últimos 90 dias</option>
+                <option value="0">Todo o período</option>
+              </select>
+            </div>
+            <div class="filter-group">
+              <label>Tipo</label>
+              <select id="tipoFiltro" class="select-custom">
+                <option value="todos" selected>Todas operações</option>
+                <option value="deposito">Depósitos</option>
+                <option value="transferencia">Transferências</option>
+                <option value="pagamento">Pagamentos</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="dashboard-card">
+        <div class="card-header">
+          <h3><i class="fas fa-list"></i> Extrato Detalhado</h3>
+        </div>
+        <div class="card-body">
+          <div id="extrato" class="transactions-list">
+           
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  
+
+  <script>
+    const usuarioAtual = window.db.getUsuarioAtual();
+    if (!usuarioAtual) location.href = 'index.html';
+    
+    const usuarios = window.db.getUsuarios();
+    const usuario = usuarios[usuarioAtual];
+    if (!usuarios) location.href = 'index.html';
+
+    function getSaudacao() {
+      const hora = new Date().getHours();
+      if (hora >= 5 && hora < 12) return "Bom dia";
+      if (hora >= 12 && hora < 18) return "Boa tarde";
+      return "Boa noite";
+    }
+
+    function formatarMoeda(valor) {
+      return valor.toLocaleString('pt-BR', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      });
+    }
+
+    function parseDataBR(dataString) {
+      const partes = dataString.match(/(\d{2})\/(\d{2})\/(\d{4}),\s*(\d{2}):(\d{2})/);
+      if (!partes) return null;
+      const [_, dia, mes, ano, hora, minuto] = partes;
+      return new Date(ano, mes - 1, dia, hora, minuto);
+    }
+    document.getElementById('saldo').textContent = formatarMoeda(usuario.saldo || 0);
+
+    function filtrarTransacoes() {
+      const dias = parseInt(document.getElementById('periodoFiltro').value);
+      const tipo = document.getElementById('tipoFiltro').value;
+      
+      let transacoes = usuario.historico.slice();
+
+      if (dias > 0) {
+        const dataLimite = new Date();
+        dataLimite.setDate(dataLimite.getDate() - dias);
+
+        transacoes = transacoes.filter(transacao => {
+          const dataTexto = transacao.split('—')[0].trim();
+          const dataTransacao = parseDataBR(dataTexto);
+          return dataTransacao && dataTransacao >= dataLimite;
+        });
+      }
+
+      if (tipo !== 'todos') {
+        const normalizar = str => str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+        transacoes = transacoes.filter(transacao => {
+          const texto = normalizar(transacao);
+          return texto.includes(normalizar(tipo));
+        });
+      }
+
+      renderizarTransacoes(transacoes);
+    }
+
+    function renderizarTransacoes(transacoes) {
+      const extratoContainer = document.getElementById('extrato');
+      
+      if (transacoes.length === 0) {
+        extratoContainer.innerHTML = '<p style="text-align: center; color: #6c757d; padding: 2rem;">Nenhuma transação encontrada</p>';
+        return;
+      }
+
+      extratoContainer.innerHTML = transacoes.slice().reverse().map(transacao => {
+        const partes = transacao.split('—');
+        const data = partes[0].trim();
+        const descricao = partes[1]?.trim() || '';
+
+        let icone = 'money-bill-transfer';
+        let valor = '';
+        let classe = '';
+
+        const descLower = descricao.toLowerCase();
+        const matchValor = descricao.match(/r\$ ?([\d,.]+)/i);
+        const valorFormatado = matchValor ? matchValor[1] : '';
+
+        if (descLower.includes('depósito')) {
+          icone = 'money-bill-wave';
+          valor = `+ R$ ${valorFormatado}`;
+          classe = 'amount-positive';
+        } 
+        else if (descLower.includes('transferência')) {
+          icone = 'exchange-alt';
+          if (descLower.includes('recebida') || descLower.includes('recebido') || descLower.includes('de')) {
+            valor = `+ R$ ${valorFormatado}`;
+            classe = 'amount-positive';
+          } else {
+            valor = `- R$ ${valorFormatado}`;
+            classe = 'amount-negative';
+          }
+        } 
+        else if (descLower.includes('pagamento')) {
+          icone = 'receipt';
+          valor = `- R$ ${valorFormatado}`;
+          classe = 'amount-negative';
+        }
+
+        return `
+          <div class="transaction-item">
+            <div class="transaction-info">
+              <div class="transaction-icon">
+                <i class="fas fa-${icone}"></i>
+              </div>
+              <div class="transaction-details">
+                <span class="transaction-name">${descricao}</span>
+                <span class="transaction-date">${data}</span>
+              </div>
+            </div>
+            ${valor ? `<div class="transaction-amount ${classe}">${valor}</div>` : ''}
+          </div>
+        `;
+      }).join('');
+    }
+
+    document.getElementById('periodoFiltro').addEventListener('change', filtrarTransacoes);
+    document.getElementById('tipoFiltro').addEventListener('change', filtrarTransacoes);
+    filtrarTransacoes();
+
+    function logout1() {
+      window.location.href = 'painel.html';
+    }
+  </script>
+</body>
+</html>
