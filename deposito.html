@@ -55,13 +55,13 @@
       const u = window.db.getUsuarios()[atual];
       document.getElementById('saldo').textContent = (u.saldo||0).toFixed(2);
     }
-    atualizarSaldoVisivel();
+    atualizarSaldoVisivel();  
 
     document.getElementById('btnDepositar').addEventListener('click', function(){
       const v = parseFloat(document.getElementById('valor').value);
       const msg = document.getElementById('msg');
       msg.style.color = 'red';
-      if (!(v > 0)) { msg.textContent = 'Valor inválido para depósito.'; return; }
+      if (!(v > 0  && v < 1000000)) { msg.textContent = 'Valor inválido para depósito.'; return; }
       const usuarios = window.db.getUsuarios();
       usuarios[atual].saldo = (usuarios[atual].saldo || 0) + v;
       usuarios[atual].historico = usuarios[atual].historico || [];

@@ -56,10 +56,15 @@ function atualizarSaldo() {
 function depositar() {
   const valor = parseFloat(document.getElementById("deposito").value);
   if (valor > 0) {
-    usuarios[usuarioAtual].saldo += valor;
+    if(valor <= 1000000){
+      usuarios[usuarioAtual].saldo += valor;
     adicionarHistorico(`Depósito de R$ ${valor.toFixed(2)}`);
     atualizarSaldo();
     document.getElementById("deposito").value = "";
+    }
+    else{
+      alert("O valor máximo para depósito é R$ 1.000.000,00");
+    }
   } else {
     alert("Valor inválido para depósito.");
   }
