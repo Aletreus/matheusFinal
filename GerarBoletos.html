@@ -130,7 +130,6 @@
     const inputData = document.getElementById('dataVencimento');
     const msg = document.getElementById('msg');
     const tabela = document.querySelector('#listaBoletos tbody');
-    const hoje = new Date();
 
     function carregarBoletos() {
       return JSON.parse(localStorage.getItem('boletos') || '[]');
@@ -168,13 +167,6 @@
       if (!dataVenc) {
         msg.style.color = "red";
         msg.textContent = "Selecione uma data de vencimento.";
-        return;
-      }
-      hoje.setHours(0,0,0,0);
-      const vencimento = new Date(dataVenc);
-      if (vencimento < hoje){
-        msg.style.color = "red";
-        msg.textContent = "Selecione uma data de vencimento válida.";
         return;
       }
 
