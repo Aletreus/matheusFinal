@@ -425,60 +425,67 @@
   
 
   <script>
-    const usuarioAtual = window.db.getUsuarioAtual();
-    if (!usuarioAtual) location.href = 'index.html';
-    
-    const usuarios = window.db.getUsuarios();
-    const usuario = usuarios[usuarioAtual];
-    
-    function getSaudacao() {
-      const hora = new Date().getHours();
-      if (hora >= 5 && hora < 12) return "Bom dia";
-      if (hora >= 12 && hora < 18) return "Boa tarde";
-      return "Boa noite";
+  const API = "http://localhost:3000";
+
+  // Pegando usuário vindo da URL
+  const usuario = new URLSearchParams(location.search).get("usuario");
+  if (!usuario) {
+    location.href = "index.html";
+    throw "";
+  }
+
+  function getSaudacao() {
+    const hora = new Date().getHours();
+    if (hora >= 5 && hora < 12) return "Bom dia";
+    if (hora >= 12 && hora < 18) return "Boa tarde";
+    return "Boa noite";
+  }
+
+  function formatarMoeda(valor) {
+    return valor.toLocaleString("pt-BR", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+  }
+
+  async function carregarPerfil() {
+    const resp = await fetch(`${API}/perfil/${usuario}`);
+    const dados = await resp.json();
+
+    const nome = dados.nome || usuario;
+    document.getElementById("userName").textContent = nome;
+    document.getElementById("userGreeting").textContent =
+      `${getSaudacao()}, ${nome.split(" ")[0]}`;
+  }
+
+  async function carregarSaldo() {
+    const resp = await fetch(`${API}/saldo/${usuario}`);
+    const dados = await resp.json();
+
+    document.getElementById("saldo").textContent = formatarMoeda(dados.saldo || 0);
+  }
+
+  // CARREGAR HISTÓRICO
+  async function carregarHistorico() {
+    const resp = await fetch(`${API}/historico/${usuario}`);
+    const historico = await resp.json();
+
+    const container = document.getElementById("ultimasTransacoes");
+
+    if (!historico.length) {
+      container.innerHTML = `<p style="text-align:center;color:#6c757d;">Nenhuma transação realizada</p>`;
+      return;
     }
 
-    function formatarMoeda(valor) {
-      return valor.toLocaleString('pt-BR', {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2
-      });
-    }
+    container.innerHTML = historico
+      .map((t) => {
+        const data = new Date(t.data).toLocaleDateString("pt-BR");
+        let icone = "money-bill-transfer";
 
-    function formatarData(data) {
-      return new Date(data).toLocaleDateString('pt-BR', {
-        day: '2-digit',
-        month: '2-digit',
-        year: '2-digit'
-      });
-    }
-
-    document.getElementById('userName').textContent = usuario.perfil?.nome || usuarioAtual;
-    document.getElementById('userGreeting').textContent = `${getSaudacao()}, ${usuario.perfil?.nome?.split(' ')[0] || usuarioAtual}`;
-    document.getElementById('saldo').textContent = formatarMoeda(usuario.saldo || 0);
-
-    function renderizarUltimasTransacoes() {
-      const transacoesContainer = document.getElementById('ultimasTransacoes');
-      const ultimasTransacoes = usuario.historico.slice(-3).reverse(); 
-
-      transacoesContainer.innerHTML = ultimasTransacoes.map(transacao => {
-        const partes = transacao.split('—');
-        const data = partes[0].trim();
-        const descricao = partes[1].trim();
-        
-        let icone = 'money-bill-transfer';
-        let tipo = '';
-        
-        if (descricao.toLowerCase().includes('depósito')) {
-          icone = 'money-bill-wave';
-          tipo = 'positive';
-        } else if (descricao.toLowerCase().includes('transferência')) {
-          icone = 'exchange-alt';
-          tipo = 'negative';
-        } else if (descricao.toLowerCase().includes('pagamento')) {
-          icone = 'receipt';
-          tipo = 'negative';
-        }
+        const d = t.descricao.toLowerCase();
+        if (d.includes("depósito")) icone = "money-bill-wave";
+        else if (d.includes("pagamento")) icone = "receipt";
+        else if (d.includes("transferência")) icone = "exchange-alt";
 
         return `
           <div class="transaction-item">
@@ -487,25 +494,25 @@
                 <i class="fas fa-${icone}"></i>
               </div>
               <div class="transaction-details">
-                <span class="transaction-name">${descricao}</span>
-                <span class="transaction-date">${formatarData(data)}</span>
+                <span class="transaction-name">${t.descricao}</span>
+                <span class="transaction-date">${data}</span>
               </div>
             </div>
           </div>
         `;
-      }).join('');
+      })
+      .join("");
+  }
 
-      if (ultimasTransacoes.length === 0) {
-        transacoesContainer.innerHTML = '<p style="text-align: center; color: #6c757d;">Nenhuma transação realizada</p>';
-      }
-    }
+  function sair() {
+    location.href = "index.html";
+  }
 
-    renderizarUltimasTransacoes();
+  carregarPerfil();
+  carregarSaldo();
+  carregarHistorico();
+</script>
 
-    function sair() {
-      window.db.logout();
-      location.href = 'index.html';
-    }
-  </script>
 </body>
+
 </html>
