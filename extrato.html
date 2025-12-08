@@ -328,129 +328,148 @@
   
 
   <script>
-    const usuarioAtual = window.db.getUsuarioAtual();
-    if (!usuarioAtual) location.href = 'index.html';
-    
-    const usuarios = window.db.getUsuarios();
-    const usuario = usuarios[usuarioAtual];
-    if (!usuarios) location.href = 'index.html';
+  // CONFIG
+  const API = "http://localhost:3000";
 
-    function getSaudacao() {
-      const hora = new Date().getHours();
-      if (hora >= 5 && hora < 12) return "Bom dia";
-      if (hora >= 12 && hora < 18) return "Boa tarde";
-      return "Boa noite";
+  // Recupera usuário logado do localStorage
+  const usuarioAtual = localStorage.getItem("usuarioAtual");
+  if (!usuarioAtual) location.href = "index.html";
+
+  let historicoCompleto = [];
+  let saldoAtual = 0;
+
+  // --- FORMATADORES ---
+  function formatarMoeda(valor) {
+    return Number(valor).toLocaleString('pt-BR', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    });
+  }
+
+  function formatarDataBR(dataISO) {
+    const d = new Date(dataISO);
+    return d.toLocaleDateString("pt-BR") + " " + d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+  }
+
+  function normalizar(str) {
+    return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  }
+
+  // --- CARREGAR PERFIL ---
+  async function carregarPerfil() {
+    const resp = await fetch(`${API}/perfil/${usuarioAtual}`);
+    const dados = await resp.json();
+
+    saldoAtual = dados.saldo || 0;
+
+    document.getElementById("saldo").textContent = formatarMoeda(saldoAtual);
+  }
+
+  // --- CARREGAR HISTÓRICO ---
+  async function carregarHistorico() {
+    const resp = await fetch(`${API}/historico/${usuarioAtual}`);
+    historicoCompleto = await resp.json();
+
+    filtrarTransacoes();
+  }
+
+  // --- FILTROS ---
+  function filtrarTransacoes() {
+    const dias = parseInt(document.getElementById("periodoFiltro").value);
+    const tipo = document.getElementById("tipoFiltro").value;
+
+    let lista = [...historicoCompleto];
+
+    // FILTRO DE TEMPO
+    if (dias > 0) {
+      const limite = new Date();
+      limite.setDate(limite.getDate() - dias);
+
+      lista = lista.filter(item => new Date(item.data) >= limite);
     }
 
-    function formatarMoeda(valor) {
-      return valor.toLocaleString('pt-BR', {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2
-      });
+    // FILTRO DE TIPO
+    if (tipo !== "todos") {
+      lista = lista.filter(item => normalizar(item.descricao).includes(normalizar(tipo)));
     }
 
-    function parseDataBR(dataString) {
-      const partes = dataString.match(/(\d{2})\/(\d{2})\/(\d{4}),\s*(\d{2}):(\d{2})/);
-      if (!partes) return null;
-      const [_, dia, mes, ano, hora, minuto] = partes;
-      return new Date(ano, mes - 1, dia, hora, minuto);
-    }
-    document.getElementById('saldo').textContent = formatarMoeda(usuario.saldo || 0);
+    renderizarExtrato(lista);
+  }
 
-    function filtrarTransacoes() {
-      const dias = parseInt(document.getElementById('periodoFiltro').value);
-      const tipo = document.getElementById('tipoFiltro').value;
-      
-      let transacoes = usuario.historico.slice();
+  // --- RENDERIZAÇÃO ---
+  function renderizarExtrato(lista) {
+    const extrato = document.getElementById("extrato");
 
-      if (dias > 0) {
-        const dataLimite = new Date();
-        dataLimite.setDate(dataLimite.getDate() - dias);
-
-        transacoes = transacoes.filter(transacao => {
-          const dataTexto = transacao.split('—')[0].trim();
-          const dataTransacao = parseDataBR(dataTexto);
-          return dataTransacao && dataTransacao >= dataLimite;
-        });
-      }
-
-      if (tipo !== 'todos') {
-        const normalizar = str => str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
-        transacoes = transacoes.filter(transacao => {
-          const texto = normalizar(transacao);
-          return texto.includes(normalizar(tipo));
-        });
-      }
-
-      renderizarTransacoes(transacoes);
+    if (lista.length === 0) {
+      extrato.innerHTML = `<p style="text-align:center;color:#6c757d;padding:2rem;">Nenhuma transação encontrada</p>`;
+      return;
     }
 
-    function renderizarTransacoes(transacoes) {
-      const extratoContainer = document.getElementById('extrato');
-      
-      if (transacoes.length === 0) {
-        extratoContainer.innerHTML = '<p style="text-align: center; color: #6c757d; padding: 2rem;">Nenhuma transação encontrada</p>';
-        return;
-      }
+    extrato.innerHTML = lista.map(item => {
 
-      extratoContainer.innerHTML = transacoes.slice().reverse().map(transacao => {
-        const partes = transacao.split('—');
-        const data = partes[0].trim();
-        const descricao = partes[1]?.trim() || '';
+      const descricao = item.descricao;
+      const data = formatarDataBR(item.data);
 
-        let icone = 'money-bill-transfer';
-        let valor = '';
-        let classe = '';
+      let icone = "money-bill-transfer";
+      let valor = "";
+      let classe = "";
 
-        const descLower = descricao.toLowerCase();
-        const matchValor = descricao.match(/r\$ ?([\d,.]+)/i);
-        const valorFormatado = matchValor ? matchValor[1] : '';
+      const descLower = normalizar(descricao);
+      const matchValor = descricao.match(/r\$ ?([\d.,]+)/i);
+      const valorFormatado = matchValor ? matchValor[1] : "";
 
-        if (descLower.includes('depósito')) {
-          icone = 'money-bill-wave';
+      if (descLower.includes("deposito") || descLower.includes("depósito")) {
+        icone = "money-bill-wave";
+        valor = `+ R$ ${valorFormatado}`;
+        classe = "amount-positive";
+
+      } else if (descLower.includes("transferencia")) {
+        icone = "exchange-alt";
+
+        if (descLower.includes("receb") || descLower.includes("de ")) {
           valor = `+ R$ ${valorFormatado}`;
-          classe = 'amount-positive';
-        } 
-        else if (descLower.includes('transferência')) {
-          icone = 'exchange-alt';
-          if (descLower.includes('recebida') || descLower.includes('recebido') || descLower.includes('de')) {
-            valor = `+ R$ ${valorFormatado}`;
-            classe = 'amount-positive';
-          } else {
-            valor = `- R$ ${valorFormatado}`;
-            classe = 'amount-negative';
-          }
-        } 
-        else if (descLower.includes('pagamento')) {
-          icone = 'receipt';
+          classe = "amount-positive";
+        } else {
           valor = `- R$ ${valorFormatado}`;
-          classe = 'amount-negative';
+          classe = "amount-negative";
         }
 
-        return `
-          <div class="transaction-item">
-            <div class="transaction-info">
-              <div class="transaction-icon">
-                <i class="fas fa-${icone}"></i>
-              </div>
-              <div class="transaction-details">
-                <span class="transaction-name">${descricao}</span>
-                <span class="transaction-date">${data}</span>
-              </div>
+      } else if (descLower.includes("pagamento")) {
+        icone = "receipt";
+        valor = `- R$ ${valorFormatado}`;
+        classe = "amount-negative";
+      }
+
+      return `
+        <div class="transaction-item">
+          <div class="transaction-info">
+            <div class="transaction-icon">
+              <i class="fas fa-${icone}"></i>
             </div>
-            ${valor ? `<div class="transaction-amount ${classe}">${valor}</div>` : ''}
+            <div class="transaction-details">
+              <span class="transaction-name">${descricao}</span>
+              <span class="transaction-date">${data}</span>
+            </div>
           </div>
-        `;
-      }).join('');
-    }
+          ${valor ? `<div class="transaction-amount ${classe}">${valor}</div>` : ""}
+        </div>
+      `;
+    }).join("");
+  }
 
-    document.getElementById('periodoFiltro').addEventListener('change', filtrarTransacoes);
-    document.getElementById('tipoFiltro').addEventListener('change', filtrarTransacoes);
-    filtrarTransacoes();
+  // --- EVENTOS ---
+  document.getElementById("periodoFiltro").addEventListener("change", filtrarTransacoes);
+  document.getElementById("tipoFiltro").addEventListener("change", filtrarTransacoes);
 
-    function logout1() {
-      window.location.href = 'painel.html';
-    }
-  </script>
+  // --- INÍCIO ---
+  carregarPerfil();
+  carregarHistorico();
+
+  function logout1() {
+    location.href = "painel.html";
+  }
+</script>
+
 </body>
+
 </html>
