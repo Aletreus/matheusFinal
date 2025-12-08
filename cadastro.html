@@ -132,186 +132,199 @@
 
   
   <script>
-    let currentStep = 1;
-    const formData = {};
+  let currentStep = 1;
+  const formData = {};
+  const API = "http://localhost:3000";
 
-    function validarCPF(cpf) {
-      cpf = cpf.replace(/[^\d]+/g, '');
-      if (cpf.length !== 11 || /^(\d)\1+$/.test(cpf)) return false;
-      let soma = 0, resto;
+  function validarCPF(cpf) {
+    cpf = cpf.replace(/[^\d]+/g, '');
+    if (cpf.length !== 11 || /^(\d)\1+$/.test(cpf)) return false;
 
-      for (let i = 1; i <= 9; i++)
-        soma += parseInt(cpf.substring(i - 1, i)) * (11 - i);
-      resto = (soma * 10) % 11;
-      if (resto === 10 || resto === 11) resto = 0;
-      if (resto !== parseInt(cpf.substring(9, 10))) return false;
+    let soma = 0, resto;
 
-      soma = 0;
-      for (let i = 1; i <= 10; i++)
-        soma += parseInt(cpf.substring(i - 1, i)) * (12 - i);
-      resto = (soma * 10) % 11;
-      if (resto === 10 || resto === 11) resto = 0;
-      return resto === parseInt(cpf.substring(10, 11));
-    }
+    for (let i = 1; i <= 9; i++)
+      soma += parseInt(cpf.substring(i - 1, i)) * (11 - i);
+    resto = (soma * 10) % 11;
+    if (resto === 10 || resto === 11) resto = 0;
+    if (resto !== parseInt(cpf.substring(9, 10))) return false;
 
-    function validateStep(step) {
-      const msg = document.getElementById('msg');
-      msg.textContent = '';
+    soma = 0;
+    for (let i = 1; i <= 10; i++)
+      soma += parseInt(cpf.substring(i - 1, i)) * (12 - i);
+    resto = (soma * 10) % 11;
+    if (resto === 10 || resto === 11) resto = 0;
 
-      switch(step) {
-        case 1:
-          const nome = document.getElementById('nome').value.trim();
-          const cpf = document.getElementById('cpf').value.trim();
-          const dataNascimento = document.getElementById('dataNascimento').value;
-          const telefone = document.getElementById('telefone').value.trim();
-          const email = document.getElementById('email').value.trim();
-          
-          if (!nome || !cpf || !dataNascimento || !telefone || !email) {
-            msg.textContent = 'Preencha todos os campos';
-            return false;
-          }
+    return resto === parseInt(cpf.substring(10, 11));
+  }
 
-          if (!validarCPF(cpf)) {
-            msg.textContent = 'CPF inválido';
-            return false;
-          }
+  function validateStep(step) {
+    const msg = document.getElementById('msg');
+    msg.textContent = '';
 
-          formData.nome = nome;
-          formData.cpf = cpf;
-          formData.dataNascimento = dataNascimento;
-          formData.telefone = telefone;
-          formData.email = email;
-          break;
+    switch(step) {
+      case 1:
+        const nome = document.getElementById('nome').value.trim();
+        const cpf = document.getElementById('cpf').value.trim();
+        const dataNascimento = document.getElementById('dataNascimento').value;
+        const telefone = document.getElementById('telefone').value.trim();
+        const email = document.getElementById('email').value.trim();
 
-        case 2:
-          const cep = document.getElementById('cep').value.trim();
-          const rua = document.getElementById('rua').value.trim();
-          const numero = document.getElementById('numero').value.trim();
-          const bairro = document.getElementById('bairro').value.trim();
-          const cidade = document.getElementById('cidade').value.trim();
-          const estado = document.getElementById('estado').value.trim();
-          
-          if (!cep || !rua || !numero || !bairro || !cidade || !estado) {
-            msg.textContent = 'Preencha todos os campos obrigatórios';
-            return false;
-          }
-          formData.endereco = { cep, rua, numero, bairro, cidade, estado };
-          break;
-
-        case 3:
-          const usuario = document.getElementById('usuario').value.trim();
-          const senha = document.getElementById('senha').value;
-          const confirmarSenha = document.getElementById('confirmarSenha').value;
-          
-          if (!usuario || !senha || !confirmarSenha) {
-            msg.textContent = 'Preencha todos os campos';
-            return false;
-          }
-          if (senha !== confirmarSenha) {
-            msg.textContent = 'As senhas não coincidem';
-            return false;
-          }
-          formData.usuario = usuario;
-          formData.senha = senha;
-          break;
-      }
-      return true;
-    }
-
-    function updateProgressBar(step) {
-      document.querySelectorAll('.progress-step').forEach((el, index) => {
-        if (index + 1 <= step) el.classList.add('active');
-        else el.classList.remove('active');
-      });
-    }
-
-    function showStep(step) {
-      document.querySelectorAll('.step').forEach(el => el.classList.remove('active'));
-      document.getElementById('step' + step).classList.add('active');
-      updateProgressBar(step);
-      if (step === 4) updateResumo();
-    }
-
-    function nextStep(currentStep) {
-      if (validateStep(currentStep)) showStep(currentStep + 1);
-    }
-
-    function prevStep(currentStep) {
-      showStep(currentStep - 1);
-    }
-
-    function updateResumo() {
-      const resumo = document.getElementById('resumoCadastro');
-      resumo.innerHTML = `
-        <h3>Dados Pessoais:</h3>
-        <p>Nome: ${formData.nome}</p>
-        <p>CPF: ${formData.cpf}</p>
-        <p>Data de Nascimento: ${formData.dataNascimento}</p>
-        <p>Telefone: ${formData.telefone}</p>
-        <p>Email: ${formData.email}</p>
-        
-        <h3>Endereço:</h3>
-        <p>CEP: ${formData.endereco.cep}</p>
-        <p>Rua: ${formData.endereco.rua}, ${formData.endereco.numero}</p>
-        <p>Bairro: ${formData.endereco.bairro}</p>
-        <p>Cidade: ${formData.endereco.cidade} - ${formData.endereco.estado}</p>
-        
-        <h3>Dados da Conta:</h3>
-        <p>Usuário: ${formData.usuario}</p>
-      `;
-    }
-
-    document.getElementById('cpf').addEventListener('input', function(e) {
-      let value = e.target.value.replace(/\D/g, '');
-      if (value.length <= 11)
-        value = value.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4");
-      e.target.value = value;
-    });
-
-    document.getElementById('telefone').addEventListener('input', function(e) {
-      let value = e.target.value.replace(/\D/g, '');
-      if (value.length <= 11)
-        value = value.replace(/(\d{2})(\d{5})(\d{4})/, "($1) $2-$3");
-      e.target.value = value;
-    });
-
-    document.getElementById('cep').addEventListener('input', function(e) {
-      let value = e.target.value.replace(/\D/g, '');
-      if (value.length <= 8)
-        value = value.replace(/(\d{5})(\d{3})/, "$1-$2");
-      e.target.value = value;
-    });
-
-   
-    document.getElementById('btnConcluir').addEventListener('click', function(){
-      const msg = document.getElementById('msg');
-      const usuarios = window.db.getUsuarios();
-      
-      if (usuarios[formData.usuario]) { 
-        msg.textContent = 'Usuário já existe'; 
-        return; 
-      }
-
-      usuarios[formData.usuario] = { 
-        senha: formData.senha, 
-        saldo: 0, 
-        historico: [`${new Date().toLocaleString()} — Conta criada para ${formData.nome}`], 
-        cartoes: [], 
-        emprestimos: [], 
-        perfil: {
-          nome: formData.nome,
-          email: formData.email,
-          telefone: formData.telefone,
-          cpf: formData.cpf,
-          dataNascimento: formData.dataNascimento,
-          endereco: formData.endereco
+        if (!nome || !cpf || !dataNascimento || !telefone || !email) {
+          msg.textContent = 'Preencha todos os campos';
+          return false;
         }
-      };
-      
-      window.db.saveUsuarios(usuarios);
-      window.db.setUsuarioAtual(formData.usuario);
-      window.location.href = 'painel.html';
+        if (!validarCPF(cpf)) {
+          msg.textContent = 'CPF inválido';
+          return false;
+        }
+
+        formData.nome = nome;
+        formData.cpf = cpf;
+        formData.dataNascimento = dataNascimento;
+        formData.telefone = telefone;
+        formData.email = email;
+        break;
+
+      case 2:
+        const cep = document.getElementById('cep').value.trim();
+        const rua = document.getElementById('rua').value.trim();
+        const numero = document.getElementById('numero').value.trim();
+        const complemento = document.getElementById('complemento').value.trim();
+        const bairro = document.getElementById('bairro').value.trim();
+        const cidade = document.getElementById('cidade').value.trim();
+        const estado = document.getElementById('estado').value.trim();
+
+        if (!cep || !rua || !numero || !bairro || !cidade || !estado) {
+          msg.textContent = 'Preencha todos os campos obrigatórios';
+          return false;
+        }
+
+        formData.cep = cep;
+        formData.rua = rua;
+        formData.numero = numero;
+        formData.complemento = complemento;
+        formData.bairro = bairro;
+        formData.cidade = cidade;
+        formData.estado = estado;
+        break;
+
+      case 3:
+        const usuario = document.getElementById('usuario').value.trim();
+        const senha = document.getElementById('senha').value;
+        const confirmarSenha = document.getElementById('confirmarSenha').value;
+
+        if (!usuario || !senha || !confirmarSenha) {
+          msg.textContent = 'Preencha todos os campos';
+          return false;
+        }
+        if (senha !== confirmarSenha) {
+          msg.textContent = 'As senhas não coincidem';
+          return false;
+        }
+
+        formData.usuario = usuario;
+        formData.senha = senha;
+        break;
+    }
+    return true;
+  }
+
+  function updateProgressBar(step) {
+    document.querySelectorAll('.progress-step').forEach((el, index) => {
+      if (index + 1 <= step) el.classList.add('active');
+      else el.classList.remove('active');
     });
-  </script>
+  }
+
+  function showStep(step) {
+    document.querySelectorAll('.step').forEach(el => el.classList.remove('active'));
+    document.getElementById('step' + step).classList.add('active');
+    updateProgressBar(step);
+
+    if (step === 4) updateResumo();
+  }
+
+  function nextStep(currentStep) {
+    if (validateStep(currentStep)) showStep(currentStep + 1);
+  }
+
+  function prevStep(currentStep) {
+    showStep(currentStep - 1);
+  }
+
+  function updateResumo() {
+    const resumo = document.getElementById('resumoCadastro');
+    resumo.innerHTML = `
+      <h3>Dados Pessoais:</h3>
+      <p>Nome: ${formData.nome}</p>
+      <p>CPF: ${formData.cpf}</p>
+      <p>Data de Nascimento: ${formData.dataNascimento}</p>
+      <p>Telefone: ${formData.telefone}</p>
+      <p>Email: ${formData.email}</p>
+
+      <h3>Endereço:</h3>
+      <p>${formData.rua}, ${formData.numero} — ${formData.bairro}</p>
+      <p>${formData.cidade} - ${formData.estado}</p>
+      <p>CEP: ${formData.cep}</p>
+
+      <h3>Dados da Conta:</h3>
+      <p>Usuário: ${formData.usuario}</p>
+    `;
+  }
+
+
+  // EVENTO FINAL – ENVIO PARA A API
+  document.getElementById('btnConcluir').addEventListener('click', async function(){
+    const msg = document.getElementById('msg');
+    msg.textContent = '';
+
+    try {
+      const resp = await fetch(`${API}/cadastro`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData)
+      });
+
+      const dados = await resp.json();
+
+      if (!resp.ok) {
+        msg.textContent = dados.error || "Erro ao cadastrar";
+        return;
+      }
+
+      // Cadastro OK → direciona para login
+      alert("Cadastro concluído com sucesso!");
+      location.href = "index.html";
+
+    } catch (e) {
+      msg.textContent = "Erro ao conectar com o servidor.";
+    }
+  });
+
+
+  // FORMATADORES
+  document.getElementById('cpf').addEventListener('input', function(e) {
+    let value = e.target.value.replace(/\D/g, '');
+    if (value.length <= 11)
+      value = value.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4");
+    e.target.value = value;
+  });
+
+  document.getElementById('telefone').addEventListener('input', function(e) {
+    let value = e.target.value.replace(/\D/g, '');
+    if (value.length <= 11)
+      value = value.replace(/(\d{2})(\d{5})(\d{4})/, "($1) $2-$3");
+    e.target.value = value;
+  });
+
+  document.getElementById('cep').addEventListener('input', function(e) {
+    let value = e.target.value.replace(/\D/g, '');
+    if (value.length <= 8)
+      value = value.replace(/(\d{5})(\d{3})/, "$1-$2");
+    e.target.value = value;
+  });
+</script>
+
 </body>
 </html>
+
