@@ -43,26 +43,68 @@
   </main>
 
   <script>
-    const atual = window.db.getUsuarioAtual();
-    if (!atual) location.href='index.html';
-    document.getElementById('enviar').addEventListener('click', function(){
-      const dest = document.getElementById('dest').value.trim();
-      const valor = parseFloat(document.getElementById('valor').value);
-      const usuarios = window.db.getUsuarios();
-      const msg = document.getElementById('msg');
-      msg.style.color='red';
-      if (!dest || !usuarios[dest]) { msg.textContent='Destinatário inválido'; return; }
-      if (dest === atual) { msg.textContent='Não é possível transferir para si mesmo'; return; }
-      if (!(valor>0.009) || valor > usuarios[atual].saldo) { msg.textContent='Valor inválido ou saldo insuficiente, Valor mínimo R$0.01'; return; }
-      usuarios[atual].saldo -= valor;
-      usuarios[dest].saldo += valor;
-      usuarios[atual].historico.unshift(`${new Date().toLocaleString()} — Transferência de R$ ${valor.toFixed(2)} para ${dest}`);
-      usuarios[dest].historico.unshift(`${new Date().toLocaleString()} — Transferência recebida R$ ${valor.toFixed(2)} de ${atual}`);
-      window.db.saveUsuarios(usuarios);
-      msg.style.color='green';
-      msg.textContent='Transferência realizada';
-      document.getElementById('dest').value=''; document.getElementById('valor').value='';
-    });
-  </script>
+  const API = "http://localhost:3000";
+  
+  const atual = localStorage.getItem("usuarioAtual");
+  if (!atual) location.href = "index.html";
+
+  document.getElementById("enviar").addEventListener("click", async () => {
+    const dest = document.getElementById("dest").value.trim();
+    const valor = parseFloat(document.getElementById("valor").value);
+    const msg = document.getElementById("msg");
+
+    msg.style.color = "red";
+    msg.textContent = "";
+
+    // Validações front-end
+    if (!dest) {
+      msg.textContent = "Informe o destinatário.";
+      return;
+    }
+
+    if (dest === atual) {
+      msg.textContent = "Não é possível transferir para si mesmo.";
+      return;
+    }
+
+    if (!(valor > 0.009)) {
+      msg.textContent = "Valor inválido. Mínimo: R$0,01.";
+      return;
+    }
+
+    try {
+      // Envia requisição para API
+      const resposta = await fetch(`${API}/transferencia`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          remetente: atual,
+          destinatario: dest,
+          valor: valor
+        })
+      });
+
+      const dados = await resposta.json();
+
+      if (!resposta.ok) {
+        msg.textContent = dados.error || "Erro ao transferir.";
+        return;
+      }
+
+      // Sucesso
+      msg.style.color = "green";
+      msg.textContent = "Transferência realizada com sucesso!";
+
+      document.getElementById("dest").value = "";
+      document.getElementById("valor").value = "";
+      
+    } catch (erro) {
+      msg.textContent = "Erro ao conectar ao servidor.";
+      console.error(erro);
+    }
+  });
+</script>
+
 </body>
+
 </html>
