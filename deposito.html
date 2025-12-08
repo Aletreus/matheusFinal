@@ -47,31 +47,66 @@
   </main>
 
   <script>
-    const atual = window.db.getUsuarioAtual();
-    if (!atual) location.href = 'index.html';
-    const usuarios = window.db.getUsuarios();
-    document.getElementById('usuario').textContent = atual;
-    function atualizarSaldoVisivel(){
-      const u = window.db.getUsuarios()[atual];
-      document.getElementById('saldo').textContent = (u.saldo||0).toFixed(2);
-    }
-    atualizarSaldoVisivel();  
+  const API = "http://localhost:3000";
+  const usuarioAtual = localStorage.getItem("usuarioAtual");
 
-    document.getElementById('btnDepositar').addEventListener('click', function(){
-      const v = parseFloat(document.getElementById('valor').value);
-      const msg = document.getElementById('msg');
-      msg.style.color = 'red';
-      if (!(v > 0  && v < 1000000)) { msg.textContent = 'Valor inválido para depósito.'; return; }
-      const usuarios = window.db.getUsuarios();
-      usuarios[atual].saldo = (usuarios[atual].saldo || 0) + v;
-      usuarios[atual].historico = usuarios[atual].historico || [];
-      usuarios[atual].historico.unshift(`${new Date().toLocaleString()} — Depósito R$ ${v.toFixed(2)}`);
-      window.db.saveUsuarios(usuarios);
-      msg.style.color = 'green';
-      msg.textContent = `Depósito de R$ ${v.toFixed(2)} efetuado.`;
-      document.getElementById('valor').value = '';
-      atualizarSaldoVisivel();
+  if (!usuarioAtual) location.href = "index.html";
+
+  document.getElementById("usuario").textContent = usuarioAtual;
+
+  // ---------------------------
+  // BUSCAR SALDO
+  // ---------------------------
+  async function atualizarSaldo() {
+    const res = await fetch(`${API}/saldo/${usuarioAtual}`);
+    const dados = await res.json();
+
+    if (!res.ok) {
+      alert("Erro ao carregar saldo.");
+      return;
+    }
+
+    document.getElementById("saldo").textContent =
+      parseFloat(dados.saldo).toFixed(2);
+  }
+
+  atualizarSaldo();
+
+  // ---------------------------
+  // REALIZAR DEPÓSITO
+  // ---------------------------
+  document.getElementById("btnDepositar").addEventListener("click", async () => {
+    const valor = parseFloat(document.getElementById("valor").value);
+    const msg = document.getElementById("msg");
+
+    msg.style.color = "red";
+
+    if (!(valor > 0 && valor < 1000000)) {
+      msg.textContent = "Valor inválido.";
+      return;
+    }
+
+    const res = await fetch(`${API}/depositar`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ usuario: usuarioAtual, valor })
     });
-  </script>
+
+    const dados = await res.json();
+
+    if (!res.ok) {
+      msg.textContent = dados.error || "Erro ao depositar.";
+      return;
+    }
+
+    msg.style.color = "green";
+    msg.textContent = `Depósito de R$ ${valor.toFixed(2)} efetuado.`;
+
+    document.getElementById("valor").value = "";
+    atualizarSaldo();
+  });
+</script>
+
 </body>
+
 </html>
