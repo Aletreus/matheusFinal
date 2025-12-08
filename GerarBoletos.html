@@ -126,67 +126,97 @@
   </footer>
 
   <script>
-    const inputValor = document.getElementById('valor');
-    const inputData = document.getElementById('dataVencimento');
-    const msg = document.getElementById('msg');
-    const tabela = document.querySelector('#listaBoletos tbody');
+  const API = "http://localhost:3000";
+  const usuarioAtual = localStorage.getItem("usuarioAtual");
 
-    function carregarBoletos() {
-      return JSON.parse(localStorage.getItem('boletos') || '[]');
+  if (!usuarioAtual) location.href = "index.html";
+
+  const inputValor = document.getElementById("valor");
+  const inputData = document.getElementById("dataVencimento");
+  const msg = document.getElementById("msg");
+  const tabela = document.querySelector("#listaBoletos tbody");
+
+  // ---------------------------
+  //  LISTAR BOLETOS
+  // ---------------------------
+  async function exibirBoletos() {
+    tabela.innerHTML = "<tr><td colspan='4'>Carregando...</td></tr>";
+
+    const res = await fetch(`${API}/boleto/listar/${usuarioAtual}`);
+    const dados = await res.json();
+
+    tabela.innerHTML = "";
+
+    if (!res.ok || dados.length === 0) {
+      tabela.innerHTML = "<tr><td colspan='4'>Nenhum boleto encontrado</td></tr>";
+      return;
     }
 
-    function salvarBoletos(lista) {
-      localStorage.setItem('boletos', JSON.stringify(lista));
+    dados.forEach(b => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${b.codigo}</td>
+        <td>${parseFloat(b.valor).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</td>
+        <td>${new Date(b.vencimento).toLocaleDateString("pt-BR")}</td>
+        <td class="${b.pago ? 'pago' : ''}">${b.pago ? "Pago" : "Em aberto"}</td>
+      `;
+      tabela.appendChild(tr);
+    });
+  }
+
+  // ---------------------------
+  //  GERAR BOLETO
+  // ---------------------------
+  async function gerarBoleto() {
+    const valor = parseFloat(inputValor.value);
+    const vencimento = inputData.value;
+
+    if (!valor || valor <= 0) {
+      msg.style.color = "red";
+      msg.textContent = "Digite um valor válido.";
+      return;
     }
 
-    function exibirBoletos() {
-      const boletos = carregarBoletos();
-      tabela.innerHTML = '';
-      boletos.forEach(b => {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td>${b.codigo}</td>
-          <td>${b.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
-          <td>${b.vencimento}</td>
-          <td class="${b.pago ? 'pago' : ''}">${b.pago ? 'Pago' : 'Em aberto'}</td>
-        `;
-        tabela.appendChild(tr);
-      });
+    if (!vencimento) {
+      msg.style.color = "red";
+      msg.textContent = "Selecione uma data.";
+      return;
     }
 
-    function gerarBoleto() {
-      const valor = parseFloat(inputValor.value);
-      const dataVenc = inputData.value;
+    const corpo = {
+      usuario: usuarioAtual,
+      valor,
+      vencimento
+    };
 
-      if (isNaN(valor) || valor <= 0 || valor > 1000000000000) {
-        msg.style.color = "red";
-        msg.textContent = "Digite um valor válido.";
-        return;
-      }
+    const res = await fetch(`${API}/boleto/criar`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(corpo)
+    });
 
-      if (!dataVenc) {
-        msg.style.color = "red";
-        msg.textContent = "Selecione uma data de vencimento.";
-        return;
-      }
+    const dados = await res.json();
 
-      const numeroBoleto = "34191" + Math.floor(Math.random() * 1e10).toString().padStart(10, "0");
-      const dataFormatada = new Date(dataVenc).toLocaleDateString('pt-BR');
-
-      const boletos = carregarBoletos();
-      boletos.push({ codigo: numeroBoleto, valor: valor, vencimento: dataFormatada, pago: false });
-      salvarBoletos(boletos);
-
-      msg.style.color = "green";
-      msg.textContent = "✅ Boleto gerado com sucesso!";
-      inputValor.value = '';
-      inputData.value = '';
-
-      exibirBoletos();
+    if (!res.ok) {
+      msg.style.color = "red";
+      msg.textContent = dados.error || "Erro ao gerar boleto.";
+      return;
     }
 
-    document.getElementById('btnGerar').addEventListener('click', gerarBoleto);
+    msg.style.color = "green";
+    msg.textContent = "✅ Boleto gerado com sucesso!";
+
+    inputValor.value = "";
+    inputData.value = "";
+
     exibirBoletos();
-  </script>
+  }
+
+  document.getElementById("btnGerar").addEventListener("click", gerarBoleto);
+
+  exibirBoletos();
+</script>
+
 </body>
 </html>
+
