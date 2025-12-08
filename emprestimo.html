@@ -72,101 +72,83 @@
   </main>
 
   <script>
-    function carregarBoletos() {
-      return JSON.parse(localStorage.getItem('boletos') || '[]');
+    const API = "http://localhost:3000";
+    const usuarioAtual = localStorage.getItem("usuarioAtual");
+
+    if (!usuarioAtual) {
+      location.href = "index.html";
     }
 
-    function salvarBoletos(lista) {
-      localStorage.setItem('boletos', JSON.stringify(lista));
+    document.getElementById("usuario").textContent = usuarioAtual;
+
+    async function carregarDados() {
+      const res = await fetch(`${API}/user/${usuarioAtual}`);
+      const data = await res.json();
+
+      document.getElementById("saldo").textContent = Number(data.saldo).toFixed(2);
+
+      const lista = document.getElementById("listaEmprestimos");
+      lista.innerHTML = "";
+
+      if (!data.emprestimos || data.emprestimos.length === 0) {
+        lista.innerHTML = "<li>Nenhum empréstimo realizado.</li>";
+      } else {
+        data.emprestimos.forEach(e => {
+          const li = document.createElement("li");
+          li.textContent =
+            `${new Date(e.data).toLocaleString()} — R$ ${Number(e.solicitado).toFixed(2)} (Total a pagar: R$ ${Number(e.totalAPagar).toFixed(2)} — Taxa ${(e.taxa * 100).toFixed(1)}%)`;
+          lista.appendChild(li);
+        });
+      }
     }
 
-    function gerarCodigoBoleto() {
-      return Math.floor(100000000000 + Math.random() * 900000000000).toString();
-    }
+    carregarDados();
 
-    const atual = window.db.getUsuarioAtual();
-    if (!atual) location.href = 'index.html';
-    const usuarios = window.db.getUsuarios();
+    document.getElementById("btnEmprestimo").addEventListener("click", async () => {
+      const valor = parseFloat(document.getElementById("valorEmprestimo").value);
+      const msg = document.getElementById("msg");
 
-    document.getElementById('usuario').textContent = atual;
+      msg.style.color = "red";
 
-    function atualizarSaldoVisivel(){
-      const u = window.db.getUsuarios()[atual];
-      document.getElementById('saldo').textContent = (u.saldo||0).toFixed(2);
-    }
-
-    function atualizarListaEmprestimos(){
-      const lista = document.getElementById('listaEmprestimos');
-      lista.innerHTML = '';
-      const emprestimos = window.db.getUsuarios()[atual].emprestimos || [];
-      if (!emprestimos.length) {
-        lista.innerHTML = '<li>Nenhum empréstimo realizado.</li>';
+      if (!(valor > 0.9)) {
+        msg.textContent = "Valor inválido. Mínimo R$ 1,00.";
         return;
       }
-      emprestimos.forEach(e => {
-        const li = document.createElement('li');
-        li.textContent = `${new Date(e.data).toLocaleString()} — R$ ${e.solicitado.toFixed(2)} (Total a pagar: R$ ${e.totalAPagar.toFixed(2)} — Taxa ${(e.taxa*100).toFixed(1)}%)`;
-        lista.appendChild(li);
-      });
-    }
 
-    atualizarSaldoVisivel();
-    atualizarListaEmprestimos();
+      if (valor > 9000) {
+        msg.textContent = "Valor acima do limite permitido (R$ 9000).";
+        return;
+      }
 
-    document.getElementById('btnEmprestimo').addEventListener('click', function(){
-      const v = parseFloat(document.getElementById('valorEmprestimo').value);
-      const msg = document.getElementById('msg');
-      msg.style.color = 'red';
-      if (!(v > 0.9)) { msg.textContent = 'Valor inválido para empréstimo. Valor mínimo R$1,00.'; return; }
+      const body = { valor };
 
-      const max = 9000;
-      if (v > max) { msg.textContent = `Valor acima do limite permitido (R$ ${max}).`; return; }
-
-      const taxa = 0.05; 
-      const total = v * (1 + taxa);
-      const usuarios = window.db.getUsuarios();
-      const u = usuarios[atual];
-
-      u.saldo = (u.saldo || 0) + v;
-      u.emprestimos = u.emprestimos || [];
-      u.emprestimos.unshift({
-        solicitado: v,
-        totalAPagar: total,
-        taxa,
-        data: new Date().toISOString()
+      const res = await fetch(`${API}/emprestimo/${usuarioAtual}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body)
       });
 
-      u.historico = u.historico || [];
-      u.historico.unshift(`${new Date().toLocaleString()} — Empréstimo de R$ ${v.toFixed(2)} (total a pagar: R$ ${total.toFixed(2)})`);
+      const data = await res.json();
 
-      window.db.saveUsuarios(usuarios);
+      if (!res.ok) {
+        msg.textContent = data.error || "Erro ao solicitar empréstimo.";
+        return;
+      }
 
-      const boletos = carregarBoletos();
-      const codigo = gerarCodigoBoleto();
-      const vencimento = new Date();
-      vencimento.setDate(vencimento.getDate() + 30);
-
-      boletos.push({
-        codigo,
-        valor: total,
-        vencimento: vencimento.toLocaleDateString('pt-BR'),
-        pago: false,
-        descricao: `Pagamento de empréstimo — ${atual}`
-      });
-
-      salvarBoletos(boletos);
-
-      msg.style.color = 'green';
+      msg.style.color = "green";
       msg.innerHTML = `
-        💰 Empréstimo de R$ ${v.toFixed(2)} aprovado!<br>
-        Total a pagar: R$ ${total.toFixed(2)} (com juros de ${(taxa*100).toFixed(1)}%)<br>
-        🔖 Boleto gerado automaticamente para pagamento (vencimento ${vencimento.toLocaleDateString('pt-BR')}).
+        💰 Empréstimo aprovado!<br>
+        Valor: R$ ${Number(data.solicitado).toFixed(2)}<br>
+        Total a pagar: R$ ${Number(data.totalAPagar).toFixed(2)} (juros ${(data.taxa * 100).toFixed(1)}%)<br>
+        🔖 Boleto gerado automaticamente (vencimento ${data.vencimento}).
       `;
 
-      document.getElementById('valorEmprestimo').value = '';
-      atualizarSaldoVisivel();
-      atualizarListaEmprestimos();
+      document.getElementById("valorEmprestimo").value = "";
+
+      carregarDados();
     });
+
   </script>
 </body>
 </html>
+
