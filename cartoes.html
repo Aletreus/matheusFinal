@@ -224,132 +224,151 @@
   </main>
 
   <script>
-    const atual = window.db.getUsuarioAtual();
-    if (!atual) location.href='index.html';
-    const usuarios = window.db.getUsuarios();
-    const bloco = document.getElementById('cartoesList');
-    const msg = document.getElementById('msg');
-    const gerarBtn = document.getElementById('gerar');
+  const API = "http://localhost:3000";
 
-    function render(){
-      bloco.innerHTML='';
-      const lista = usuarios[atual].cartoes || [];
-      if (!lista.length) { 
-        bloco.textContent='Nenhum cartão virtual gerado.'; 
-        gerarBtn.disabled = false;
-        return; 
-      }
+  const atual = localStorage.getItem("usuarioAtual");
+  if (!atual) location.href = "index.html";
 
-      gerarBtn.disabled = true;
-      bloco.className = 'card-list';
-      lista.slice().reverse().forEach((c) => {
-        const cardDiv = document.createElement('div');
-        cardDiv.className = 'credit-card';
+  const bloco = document.getElementById("cartoesList");
+  const gerarBtn = document.getElementById("gerar");
+  const msg = document.getElementById("msg");
 
-        const cardInner = document.createElement('div');
-        cardInner.className = 'credit-card-inner';
+  async function carregarCartoes() {
+    const res = await fetch(`${API}/cartoes/${atual}`);
+    const lista = await res.json();
 
-        
-        const deleteIcon = document.createElement('div');
-        deleteIcon.className = 'delete-icon';
-        deleteIcon.innerHTML = `
-          <img src="icones/trash-fechada.png" alt="Excluir" class="trash-closed">
-          <img src="icones/trash-aberta.png" alt="Excluir" class="trash-open">
-        `;
-        deleteIcon.addEventListener('click', (e) => {
-          e.stopPropagation();
-          if (confirm('Deseja realmente excluir este cartão virtual?')) {
-            deleteCard(c.criadoEm, cardDiv);
-          }
-        });
+    render(lista);
+  }
 
-        const chip = document.createElement('div');
-        chip.className = 'card-chip';
+  function render(lista) {
+    bloco.innerHTML = "";
 
-        const bankLogo = document.createElement('div');
-        bankLogo.className = 'bank-logo';
-        bankLogo.textContent = 'INSTINCT';
+    if (!lista.length) {
+      bloco.textContent = "Nenhum cartão virtual gerado.";
+      gerarBtn.disabled = false;
+      return;
+    }
 
-        const number = document.createElement('div');
-        number.className = 'card-number';
-        number.textContent = c.numero;
+    gerarBtn.disabled = true;
+    bloco.className = 'card-list';
 
-        const cardInfo = document.createElement('div');
-        cardInfo.className = 'card-info';
+    lista.slice().reverse().forEach((c) => {
+      const cardDiv = document.createElement("div");
+      cardDiv.className = "credit-card";
 
-        const holder = document.createElement('div');
-        holder.className = 'card-holder';
-        holder.textContent = usuarios[atual].perfil.nome;
+      const cardInner = document.createElement("div");
+      cardInner.className = "credit-card-inner";
 
-        const expiry = document.createElement('div');
-        expiry.className = 'card-expiry';
-        expiry.innerHTML = `<span>VALID THRU</span>${c.validade}`;
+      const deleteIcon = document.createElement("div");
+      deleteIcon.className = "delete-icon";
+      deleteIcon.innerHTML = `
+        <img src="icones/trash-fechada.png" class="trash-closed">
+        <img src="icones/trash-aberta.png" class="trash-open">
+      `;
+      
+      deleteIcon.addEventListener("click", async (e) => {
+        e.stopPropagation();
 
-        const cvv = document.createElement('div');
-        cvv.className = 'cvv-label';
-        cvv.textContent = `CVV: ${c.cvv}`;
+        if (!confirm("Deseja realmente excluir este cartão virtual?")) return;
 
-        const cardFooter = document.createElement('div');
-        cardFooter.className = 'card-footer';
-        cardFooter.appendChild(cvv);
+        await excluirCartao(c.criadoEm);
+        cardDiv.classList.add("removing");
 
-        cardInfo.appendChild(holder);
-        cardInfo.appendChild(expiry);
-
-        cardInner.appendChild(chip);
-        cardInner.appendChild(bankLogo);
-        cardInner.appendChild(number);
-        cardInner.appendChild(cardInfo);
-        cardInner.appendChild(cardFooter);
-
-        cardDiv.appendChild(cardInner);
-        cardDiv.appendChild(deleteIcon);
-        bloco.appendChild(cardDiv);
+        setTimeout(carregarCartoes, 500);
       });
-    }
 
-    function deleteCard(criadoEm, cardElement) {
-      const lista = usuarios[atual].cartoes || [];
-      const idx = lista.findIndex(c => c.criadoEm === criadoEm);
-      if (idx === -1) return;
-      cardElement.classList.add('removing');
-      setTimeout(() => {
-        lista.splice(idx, 1);
-        usuarios[atual].cartoes = lista;
-        usuarios[atual].historico = usuarios[atual].historico || [];
-        usuarios[atual].historico.unshift(`${new Date().toLocaleString()} — Cartão virtual excluído.`);
-        window.db.saveUsuarios(usuarios);
-        msg.textContent = 'Cartão excluído com sucesso.';
-        msg.style.color = 'green';
-        render();
-      }, 500);
-    }
+      const chip = document.createElement("div");
+      chip.className = "card-chip";
 
-    gerarBtn.addEventListener('click', function(){
-      if (usuarios[atual].cartoes && usuarios[atual].cartoes.length > 0) {
-        msg.textContent = 'Você já possui um cartão ativo';
-        msg.style.color = 'red';
-        return;
-      }
-      const cardNumber = Array.from({length:16}, () => Math.floor(Math.random()*10)).join('');
-      const formatted = cardNumber.match(/.{1,4}/g).join(' ');
-      const expiry = new Date(); expiry.setFullYear(expiry.getFullYear()+2);
-      const mm = String(expiry.getMonth()+1).padStart(2,'0');
-      const yy = String(expiry.getFullYear()).slice(-2);
-      const cvv = String(Math.floor(Math.random()*900)+100);
-      const novo = { numero: formatted, validade: `${mm}/${yy}`, cvv, ativo:true, criadoEm: new Date().toISOString() };
-      usuarios[atual].cartoes = usuarios[atual].cartoes || [];
-      usuarios[atual].cartoes.push(novo);
-      usuarios[atual].historico = usuarios[atual].historico || [];
-      usuarios[atual].historico.unshift(`${new Date().toLocaleString()} — Cartão virtual gerado (${formatted.slice(0,4)} ****)`);
-      window.db.saveUsuarios(usuarios);
-      msg.textContent = 'Cartão gerado com sucesso';
-      msg.style.color = 'green';
-      render();
-      gerarBtn.disabled = true;
+      const bankLogo = document.createElement("div");
+      bankLogo.className = "bank-logo";
+      bankLogo.textContent = "INSTINCT";
+
+      const number = document.createElement("div");
+      number.className = "card-number";
+      number.textContent = c.numero;
+
+      const cardInfo = document.createElement("div");
+      cardInfo.className = "card-info";
+
+      const holder = document.createElement("div");
+      holder.className = "card-holder";
+      holder.textContent = atual;
+
+      const expiry = document.createElement("div");
+      expiry.className = "card-expiry";
+      expiry.innerHTML = `<span>VALID THRU</span>${c.validade}`;
+
+      const cvv = document.createElement("div");
+      cvv.className = "cvv-label";
+      cvv.textContent = `CVV: ${c.cvv}`;
+
+      const footer = document.createElement("div");
+      footer.className = "card-footer";
+      footer.appendChild(cvv);
+
+      cardInfo.appendChild(holder);
+      cardInfo.appendChild(expiry);
+
+      cardInner.appendChild(chip);
+      cardInner.appendChild(bankLogo);
+      cardInner.appendChild(number);
+      cardInner.appendChild(cardInfo);
+      cardInner.appendChild(footer);
+
+      cardDiv.appendChild(cardInner);
+      cardDiv.appendChild(deleteIcon);
+
+      bloco.appendChild(cardDiv);
+    });
+  }
+
+  async function excluirCartao(criadoEm) {
+    const res = await fetch(`${API}/cartoes/excluir`, {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ usuario: atual, criadoEm })
     });
 
-    render();
-  </script>
+    const dados = await res.json();
+    msg.style.color = res.ok ? "green" : "red";
+    msg.textContent = dados.mensagem || dados.error;
+  }
+
+  gerarBtn.addEventListener("click", async () => {
+    const cardNumber = Array.from({ length: 16 }, () => Math.floor(Math.random() * 10)).join("");
+    const formatted = cardNumber.match(/.{1,4}/g).join(" ");
+
+    const expiry = new Date();
+    expiry.setFullYear(expiry.getFullYear() + 2);
+    const mm = String(expiry.getMonth() + 1).padStart(2, "0");
+    const yy = String(expiry.getFullYear()).slice(-2);
+
+    const cvv = String(Math.floor(Math.random() * 900) + 100);
+    const criadoEm = new Date().toISOString();
+
+    const res = await fetch(`${API}/cartoes/gerar`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        usuario: atual,
+        numero: formatted,
+        validade: `${mm}/${yy}`,
+        cvv,
+        criadoEm
+      })
+    });
+
+    const dados = await res.json();
+    msg.style.color = res.ok ? "green" : "red";
+    msg.textContent = dados.mensagem || dados.error;
+
+    if (res.ok) carregarCartoes();
+  });
+
+  carregarCartoes();
+</script>
+
 </body>
 </html>
+
