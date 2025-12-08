@@ -255,128 +255,121 @@
 
   
   <script>
-    function logout() {
-      window.db.setUsuarioAtual(null);
-      window.location.href = 'index.html';
+  const API = "http://localhost:3000";
+  const usuarioAtual = localStorage.getItem("usuarioAtual");
+
+  if (!usuarioAtual) location.href = "index.html";
+
+  // -------------------------------
+  // 1 - CARREGAR PERFIL
+  // -------------------------------
+  async function carregarPerfil() {
+    const res = await fetch(`${API}/perfil/${usuarioAtual}`);
+    if (!res.ok) return location.href = "index.html";
+
+    const perfil = await res.json();
+
+    document.getElementById("perfilNome").textContent = perfil.nome || "Não informado";
+    document.getElementById("perfilCpf").textContent = perfil.cpf || "Não informado";
+    document.getElementById("perfilDataNascimento").textContent = perfil.dataNascimento || "Não informado";
+    document.getElementById("perfilTelefone").textContent = perfil.telefone || "Não informado";
+    document.getElementById("perfilEmail").textContent = perfil.email || "Não informado";
+
+    document.getElementById("perfilCep").textContent = perfil.cep || "Não informado";
+    document.getElementById("perfilRua").textContent = perfil.rua || "Não informado";
+    document.getElementById("perfilNumero").textContent = perfil.numero || "Não informado";
+    document.getElementById("perfilComplemento").textContent = perfil.complemento || "Não informado";
+    document.getElementById("perfilBairro").textContent = perfil.bairro || "Não informado";
+    document.getElementById("perfilCidade").textContent = perfil.cidade || "Não informado";
+    document.getElementById("perfilEstado").textContent = perfil.estado || "Não informado";
+
+    document.getElementById("perfilUsuario").textContent = usuarioAtual;
+    document.getElementById("perfilDataCriacao").textContent = perfil.dataCriacao || "Indefinido";
+
+    // Preenche modo edição
+    document.getElementById("editNome").value = perfil.nome || "";
+    document.getElementById("editCpf").value = perfil.cpf || "";
+    document.getElementById("editDataNascimento").value = perfil.dataNascimento || "";
+    document.getElementById("editTelefone").value = perfil.telefone || "";
+    document.getElementById("editEmail").value = perfil.email || "";
+
+    document.getElementById("editCep").value = perfil.cep || "";
+    document.getElementById("editRua").value = perfil.rua || "";
+    document.getElementById("editNumero").value = perfil.numero || "";
+    document.getElementById("editComplemento").value = perfil.complemento || "";
+    document.getElementById("editBairro").value = perfil.bairro || "";
+    document.getElementById("editCidade").value = perfil.cidade || "";
+    document.getElementById("editEstado").value = perfil.estado || "";
+  }
+
+  // -------------------------------
+  // 2 - EDITAR
+  // -------------------------------
+  document.getElementById("btnEditar").addEventListener("click", () => {
+    document.getElementById("modoVisualizacao").style.display = "none";
+    document.getElementById("modoEdicao").style.display = "block";
+  });
+
+  document.getElementById("btnCancelar").addEventListener("click", () => {
+    document.getElementById("modoEdicao").style.display = "none";
+    document.getElementById("modoVisualizacao").style.display = "block";
+  });
+
+  // -------------------------------
+  // 3 - SALVAR ALTERAÇÕES
+  // -------------------------------
+  document.getElementById("btnSalvar").addEventListener("click", async () => {
+    const msgErro = document.getElementById("msgErro");
+    const msgSucesso = document.getElementById("msgSucesso");
+    msgErro.textContent = "";
+    msgSucesso.textContent = "";
+
+    const body = {
+      usuario: usuarioAtual,
+      nome: document.getElementById("editNome").value,
+      cpf: document.getElementById("editCpf").value,
+      dataNascimento: document.getElementById("editDataNascimento").value,
+      telefone: document.getElementById("editTelefone").value,
+      email: document.getElementById("editEmail").value,
+      cep: document.getElementById("editCep").value,
+      rua: document.getElementById("editRua").value,
+      numero: document.getElementById("editNumero").value,
+      complemento: document.getElementById("editComplemento").value,
+      bairro: document.getElementById("editBairro").value,
+      cidade: document.getElementById("editCidade").value,
+      estado: document.getElementById("editEstado").value,
+      senhaAtual: document.getElementById("senhaAtual").value,
+      novaSenha: document.getElementById("novaSenha").value
+    };
+
+    const res = await fetch(`${API}/perfil/atualizar`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body)
+    });
+
+    const dados = await res.json();
+
+    if (!res.ok) {
+      msgErro.textContent = dados.error || "Erro ao atualizar perfil";
+      return;
     }
 
-    function carregarPerfil() {
-      const usuarioAtual = window.db.getUsuarioAtual();
-      const usuarios = window.db.getUsuarios();
-      const usuario = usuarios[usuarioAtual];
-      
-      if (!usuario) {
-        window.location.href = 'index.html';
-        return;
-      }
+    msgSucesso.textContent = dados.mensagem;
 
-      const perfil = usuario.perfil;
-      document.getElementById('perfilNome').textContent = perfil.nome || 'Não informado';
-      document.getElementById('perfilCpf').textContent = perfil.cpf || 'Não informado';
-      document.getElementById('perfilDataNascimento').textContent = perfil.dataNascimento || 'Não informado';
-      document.getElementById('perfilTelefone').textContent = perfil.telefone || 'Não informado';
-      document.getElementById('perfilEmail').textContent = perfil.email || 'Não informado';
+    await carregarPerfil();
 
-      if (perfil.endereco) {
-        document.getElementById('perfilCep').textContent = perfil.endereco.cep || 'Não informado';
-        document.getElementById('perfilRua').textContent = perfil.endereco.rua || 'Não informado';
-        document.getElementById('perfilNumero').textContent = perfil.endereco.numero || 'Não informado';
-        document.getElementById('perfilComplemento').textContent = perfil.endereco.complemento || 'Não informado';
-        document.getElementById('perfilBairro').textContent = perfil.endereco.bairro || 'Não informado';
-        document.getElementById('perfilCidade').textContent = perfil.endereco.cidade || 'Não informado';
-        document.getElementById('perfilEstado').textContent = perfil.endereco.estado || 'Não informado';
-      }
+    document.getElementById("modoEdicao").style.display = "none";
+    document.getElementById("modoVisualizacao").style.display = "block";
 
-      document.getElementById('perfilUsuario').textContent = usuarioAtual;
-      const dataCriacao = usuario.historico[0].split('—')[0].trim();
-      document.getElementById('perfilDataCriacao').textContent = dataCriacao;
-    }
+    document.getElementById("senhaAtual").value = "";
+    document.getElementById("novaSenha").value = "";
+    document.getElementById("confirmarNovaSenha").value = "";
+  });
 
-    function formatarTelefone(t){return t.replace(/\D/g,"").replace(/(\d{2})(\d{5})(\d{4})/,"($1) $2-$3")}
-    function formatarCEP(c){return c.replace(/\D/g,"").replace(/(\d{5})(\d{3})/,"$1-$2")}
+  carregarPerfil();
+</script>
 
-    document.getElementById('editTelefone').addEventListener('input',e=>{
-      let v=e.target.value.replace(/\D/g,'');if(v.length<=11)e.target.value=formatarTelefone(v);
-    });
-    document.getElementById('editCep').addEventListener('input',e=>{
-      let v=e.target.value.replace(/\D/g,'');if(v.length<=8)e.target.value=formatarCEP(v);
-    });
-
-    document.getElementById('btnEditar').addEventListener('click',()=>{
-      document.getElementById('modoVisualizacao').style.display='none';
-      document.getElementById('modoEdicao').style.display='block';
-      const usuarioAtual=window.db.getUsuarioAtual();
-      const usuario=window.db.getUsuarios()[usuarioAtual];
-      const p=usuario.perfil;
-      document.getElementById('editNome').value=p.nome||'';
-      document.getElementById('editCpf').value=p.cpf||'';
-      document.getElementById('editDataNascimento').value=p.dataNascimento||'';
-      document.getElementById('editTelefone').value=p.telefone||'';
-      document.getElementById('editEmail').value=p.email||'';
-      if(p.endereco){
-        document.getElementById('editCep').value=p.endereco.cep||'';
-        document.getElementById('editRua').value=p.endereco.rua||'';
-        document.getElementById('editNumero').value=p.endereco.numero||'';
-        document.getElementById('editComplemento').value=p.endereco.complemento||'';
-        document.getElementById('editBairro').value=p.endereco.bairro||'';
-        document.getElementById('editCidade').value=p.endereco.cidade||'';
-        document.getElementById('editEstado').value=p.endereco.estado||'';
-      }
-    });
-
-    document.getElementById('btnCancelar').addEventListener('click',()=>{
-      document.getElementById('modoEdicao').style.display='none';
-      document.getElementById('modoVisualizacao').style.display='block';
-      document.getElementById('msgErro').textContent='';
-      document.getElementById('msgSucesso').textContent='';
-      document.getElementById('senhaAtual').value='';
-      document.getElementById('novaSenha').value='';
-      document.getElementById('confirmarNovaSenha').value='';
-    });
-
-    document.getElementById('btnSalvar').addEventListener('click',()=>{
-      const msgErro=document.getElementById('msgErro');
-      const msgSucesso=document.getElementById('msgSucesso');
-      msgErro.textContent='';msgSucesso.textContent='';
-      const usuarioAtual=window.db.getUsuarioAtual();
-      const usuarios=window.db.getUsuarios();
-      const usuario=usuarios[usuarioAtual];
-      const nome=document.getElementById('editNome').value.trim();
-      const email=document.getElementById('editEmail').value.trim();
-      const telefone=document.getElementById('editTelefone').value.trim();
-      if(!nome||!email||!telefone){msgErro.textContent='Nome, email e telefone são obrigatórios';return;}
-      if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){msgErro.textContent='Email inválido';return;}
-      const senhaAtual=document.getElementById('senhaAtual').value;
-      const novaSenha=document.getElementById('novaSenha').value;
-      const confirmarNovaSenha=document.getElementById('confirmarNovaSenha').value;
-      if(senhaAtual||novaSenha||confirmarNovaSenha){
-        if(senhaAtual!==usuario.senha){msgErro.textContent='Senha atual incorreta';return;}
-        if(novaSenha!==confirmarNovaSenha){msgErro.textContent='As novas senhas não coincidem';return;}
-        if(novaSenha.length<6){msgErro.textContent='A nova senha deve ter pelo menos 6 caracteres';return;}
-        usuario.senha=novaSenha;
-      }
-      usuario.perfil={...usuario.perfil,nome,email,telefone,
-        dataNascimento:document.getElementById('editDataNascimento').value,
-        endereco:{
-          cep:document.getElementById('editCep').value,
-          rua:document.getElementById('editRua').value,
-          numero:document.getElementById('editNumero').value,
-          complemento:document.getElementById('editComplemento').value,
-          bairro:document.getElementById('editBairro').value,
-          cidade:document.getElementById('editCidade').value,
-          estado:document.getElementById('editEstado').value
-        }};
-      window.db.saveUsuarios(usuarios);
-      carregarPerfil();
-      document.getElementById('modoEdicao').style.display='none';
-      document.getElementById('modoVisualizacao').style.display='block';
-      document.getElementById('senhaAtual').value='';
-      document.getElementById('novaSenha').value='';
-      document.getElementById('confirmarNovaSenha').value='';
-      msgSucesso.textContent='Perfil atualizado com sucesso!';
-    });
-
-    carregarPerfil();
-  </script>
 </body>
 </html>
+
