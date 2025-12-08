@@ -47,18 +47,44 @@
   </main>
 
   <script>
-    document.getElementById('btnAcessar').addEventListener('click', function(){
-      const u = document.getElementById('usuario').value.trim();
-      const p = document.getElementById('senha').value;
-      const usuarios = window.db.getUsuarios();
-      const msg = document.getElementById('msg');
-      if (!usuarios[u] || usuarios[u].senha !== p) {
-        msg.textContent = 'Usuário ou senha incorretos';
-        return;
+  const API = "http://localhost:3000";
+
+  document.getElementById('btnAcessar').addEventListener('click', async function () {
+    const usuario = document.getElementById('usuario').value.trim();
+    const senha = document.getElementById('senha').value;
+    const msg = document.getElementById('msg');
+
+    if (!usuario || !senha) {
+      msg.textContent = "Preencha todos os campos.";
+      return;
+    }
+
+    try {
+      const resposta = await fetch(`${API}/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          usuario: usuario,
+          senha: senha
+        })
+      });
+
+      const dados = await resposta.json();
+
+      if (resposta.ok && dados.ok) {
+        // Login validado → redirecionar passando o usuário pela URL
+        window.location.href = `painel.html?usuario=${encodeURIComponent(usuario)}`;
+      } else {
+        msg.textContent = dados.error || "Usuário ou senha incorretos";
       }
-      window.db.setUsuarioAtual(u);
-      window.location.href = 'painel.html';
-    });
-  </script>
+
+    } catch (erro) {
+      console.error("Erro ao fazer login:", erro.message);
+      msg.textContent = "Erro no servidor. Tente novamente.";
+    }
+  });
+</script>
+
 </body>
+
 </html>
