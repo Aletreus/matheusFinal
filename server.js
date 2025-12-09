@@ -267,6 +267,66 @@ app.post('/emprestimo', autenticado, (req, res) => {
 });
 
 // ===============================
+// CADASTRO DE USUÁRIO
+// ===============================
+app.post('/cadastro', (req, res) => {
+  const {
+    nome,
+    cpf,
+    dataNascimento,
+    telefone,
+    email,
+    cep,
+    rua,
+    numero,
+    complemento,
+    bairro,
+    cidade,
+    estado,
+    usuario,
+    senha
+  } = req.body;
+
+  if (
+    !nome || !cpf || !dataNascimento || !telefone || !email ||
+    !cep || !rua || !numero || !bairro || !cidade || !estado ||
+    !usuario || !senha
+  ) {
+    return res.status(400).json({ error: "Dados incompletos" });
+  }
+
+  // Verifica se usuário já existe
+  db.query("SELECT * FROM perfil WHERE usuario = ?", [usuario], (err, result) => {
+    if (err) return res.status(500).json({ error: err });
+
+    if (result.length > 0) {
+      return res.status(400).json({ error: "Usuário já existe" });
+    }
+
+    // Inserção
+    db.query(`
+      INSERT INTO perfil (
+        nomeUsuario, cpfUsuario, dataNasc, telefoneUsuario, emailUsuario,
+        cepUsuario, ruaUsuario, numeroRua, complemento,
+        bairro, cidade, estado,
+        usuario, senha, saldo
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)
+    `,
+      [
+        nome, cpf, dataNascimento, telefone, email,
+        cep, rua, numero, complemento, bairro, cidade, estado,
+        usuario, senha
+      ],
+      (err2) => {
+        if (err2) return res.status(500).json({ error: err2 });
+        res.json({ ok: true, message: "Cadastro concluído com sucesso!" });
+      }
+    );
+  });
+});
+
+
+// ===============================
 // INICIAR SERVIDOR
 // ===============================
 const PORT = process.env.PORT || 3000;
